@@ -178,7 +178,7 @@ func (bot TipBot) tipjarHandler(ctx context.Context, m *tb.Message) {
 	ctx = bot.mapTipjarLanguage(ctx, m.Text)
 	inlineTipjar, err := bot.makeTipjar(ctx, m, false)
 	if err != nil {
-		log.Errorf("[tipjar] %s", err)
+		log.Errorf("[tipjar] %s", err.Error())
 		return
 	}
 	toUserStr := GetUserStr(m.Sender)

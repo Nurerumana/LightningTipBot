@@ -106,6 +106,30 @@ func (w Wallet) Invoice(params InvoiceParams, c *Client) (lntx BitInvoice, err e
 }
 
 // Info returns wallet information
+func (c Client) Payments(w Wallet) (wtx Payments, err error) {
+	// custom header with invoice key
+	invoiceHeader := req.Header{
+		"Content-Type": "application/json",
+		"Accept":       "application/json",
+		"X-Api-Key":    w.Inkey,
+	}
+	resp, err := req.Get(c.url+"/api/v1/payments", invoiceHeader, nil)
+	if err != nil {
+		return
+	}
+
+	if resp.Response().StatusCode >= 300 {
+		var reqErr Error
+		resp.ToJSON(&reqErr)
+		err = reqErr
+		return
+	}
+
+	err = resp.ToJSON(&wtx)
+	return
+}
+
+// Info returns wallet information
 func (c Client) Info(w Wallet) (wtx Wallet, err error) {
 	// custom header with invoice key
 	invoiceHeader := req.Header{

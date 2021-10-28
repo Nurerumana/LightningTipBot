@@ -136,6 +136,16 @@ func (bot TipBot) getHandler() []Handler {
 				}},
 		},
 		{
+			Endpoints: []interface{}{"/transactions"},
+			Handler:   bot.transactionsHandler,
+			Interceptor: &Interceptor{
+				Type: MessageInterceptor,
+				Before: []intercept.Func{
+					bot.logMessageInterceptor,
+					bot.loadUserInterceptor,
+				}},
+		},
+		{
 			Endpoints: []interface{}{"/send"},
 			Handler:   bot.sendHandler,
 			Interceptor: &Interceptor{

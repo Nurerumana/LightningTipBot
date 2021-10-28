@@ -92,3 +92,20 @@ type BitInvoice struct {
 	PaymentHash    string `json:"payment_hash"`
 	PaymentRequest string `json:"payment_request"`
 }
+
+type Payments []struct {
+	CheckingID  string `json:"checking_id"`
+	Pending     bool   `json:"pending"`
+	Amount      int    `json:"amount"`
+	Fee         int    `json:"fee"`
+	Memo        string `json:"memo"`
+	Time        int    `json:"time"`
+	Bolt11      string `json:"bolt11"`
+	Preimage    string `json:"preimage"`
+	PaymentHash string `json:"payment_hash"`
+	Extra       struct {
+	} `json:"extra"`
+	WalletID      string      `json:"wallet_id"`
+	Webhook       interface{} `json:"webhook"`
+	WebhookStatus interface{} `json:"webhook_status"`
+}
