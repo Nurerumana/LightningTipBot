@@ -12,26 +12,31 @@ import (
 )
 
 type TransactionsList struct {
+	ID           string          `json:"id"`
 	User         *lnbits.User    `json:"from"`
 	Payments     lnbits.Payments `json:"payments"`
 	LanguageCode string          `json:"languagecode"`
+	CurrentPage  int             `json:"currentpage"`
+	MaxPages     int             `json:"maxpages"`
+	TxPerPage    int             `json:"txperpage"`
 }
 
-func (txlist *TransactionsList) printTransactions(ctx context.Context, payments lnbits.Payments, pagrenr int) string {
+func (txlist *TransactionsList) printTransactions(ctx context.Context) string {
 	txstr := ""
 	// for _, p := range payments {
-	tx_per_page := 10
-	pagenr := pagrenr
+	payments := txlist.Payments
+	pagenr := txlist.CurrentPage
+	tx_per_page := txlist.TxPerPage
 	if pagenr > (len(payments)+1)/tx_per_page {
 		pagenr = 0
 	}
 	if len(payments) < tx_per_page {
 		tx_per_page = len(payments)
 	}
-	start := pagrenr * (tx_per_page - 1)
+	start := pagenr * (tx_per_page - 1)
 	end := start + tx_per_page
-	if end > len(payments) {
-		end = len(payments)
+	if end >= len(payments) {
+		end = len(payments) - 1
 	}
 	for i := len(payments) - 1 - start; i >= len(payments)-1-end; i-- {
 		p := payments[i]
@@ -59,29 +64,106 @@ func (txlist *TransactionsList) printTransactions(ctx context.Context, payments 
 		}
 		txstr += "\n"
 	}
+	txstr += fmt.Sprintf("\nTotal: %d transactions. Page %d of %d.", len(payments), txlist.CurrentPage+1, txlist.MaxPages)
 	return txstr
+}
+
+var (
+	transactionsMeno           = &tb.ReplyMarkup{ResizeReplyKeyboard: true}
+	btnLeftTransactionsButton  = inlineTipjarMenu.Data("◀️", "left_transactions")
+	btnRightTransactionsButton = inlineTipjarMenu.Data("▶️", "right_transactions")
+)
+
+func (bot TipBot) makeTransactionsKeyboard(ctx context.Context, txlist TransactionsList) *tb.ReplyMarkup {
+	// transactionsMeno := &tb.ReplyMarkup{ResizeReplyKeyboard: true}
+	leftTransactionsButton := transactionsMeno.Data("←", "left_transactions")
+	rightTransactionsButton := transactionsMeno.Data("→", "right_transactions")
+	leftTransactionsButton.Data = txlist.ID
+	rightTransactionsButton.Data = txlist.ID
+	transactionsMeno.Inline(
+		transactionsMeno.Row(
+			leftTransactionsButton,
+			rightTransactionsButton),
+	)
+	return transactionsMeno
 }
 
 func (bot *TipBot) transactionsHandler(ctx context.Context, m *tb.Message) {
 	user := LoadUser(ctx)
-	var payments lnbits.Payments
-	paymentsInterface, err := bot.Cache.Get(fmt.Sprintf("%s_transactions", user.Name))
+	transactionsListInterface, err := bot.Cache.Get(fmt.Sprintf("%s_transactions", user.Name))
 	if err != nil {
-		log.Info("Getting from lnbits")
-		paymentsInterface, err = bot.Client.Payments(*user.Wallet)
+		payments, err := bot.Client.Payments(*user.Wallet)
 		if err != nil {
 			log.Errorf("[transactions] Error: %s", err.Error())
 			return
 		}
-		bot.Cache.Set(fmt.Sprintf("%s_transactions", user.Name), paymentsInterface, &store.Options{Expiration: 1 * time.Minute})
+		// var payments lnbits.Payments
+		// paymentsInterface, err := bot.Cache.Get(fmt.Sprintf("%s_transactions", user.Name))
+		// if err != nil {
+		// 	log.Info("Getting from lnbits")
+		// 	paymentsInterface, err = bot.Client.Payments(*user.Wallet)
+		// 	if err != nil {
+		// 		log.Errorf("[transactions] Error: %s", err.Error())
+		// 		return
+		// 	}
+		// 	bot.Cache.Set(fmt.Sprintf("%s_transactions", user.Name), paymentsInterface, &store.Options{Expiration: 1 * time.Minute})
+		// }
+		// payments = paymentsInterface.(lnbits.Payments)
+		tx_per_page := 20
+		transactionsListInterface = TransactionsList{
+			ID:           fmt.Sprintf("txlist-%d-%s", user.Telegram.ID, RandStringRunes(5)),
+			User:         user,
+			Payments:     payments,
+			LanguageCode: ctx.Value("userLanguageCode").(string),
+			CurrentPage:  0,
+			TxPerPage:    tx_per_page,
+			MaxPages:     (len(payments)+1)/tx_per_page + 1,
+		}
 	}
-	payments = paymentsInterface.(lnbits.Payments)
-	transactionsList := TransactionsList{
-		User:         user,
-		Payments:     payments,
-		LanguageCode: ctx.Value("userLanguageCode").(string),
+	transactionsList := transactionsListInterface.(TransactionsList)
+	bot.Cache.Set(fmt.Sprintf("%s_transactions", user.Name), transactionsList, &store.Options{Expiration: 1 * time.Minute})
+	txstr := transactionsList.printTransactions(ctx)
+	bot.trySendMessage(m.Sender, txstr, bot.makeTransactionsKeyboard(ctx, transactionsList))
+}
+
+func (bot *TipBot) transactionsScrollLeftHandler(ctx context.Context, c *tb.Callback) {
+	user := LoadUser(ctx)
+	transactionsListInterface, err := bot.Cache.Get(fmt.Sprintf("%s_transactions", user.Name))
+	if err != nil {
+		log.Info("Transactions not in cache anymore")
+		return
 	}
-	txstr := transactionsList.printTransactions(ctx, payments, 0)
-	txstr += fmt.Sprintf("\nTotal: %d transactions", len(payments))
-	bot.trySendMessage(m.Sender, txstr)
+	transactionsList := transactionsListInterface.(TransactionsList)
+
+	if c.Sender.ID == transactionsList.User.Telegram.ID {
+		if transactionsList.CurrentPage < transactionsList.MaxPages-1 {
+			transactionsList.CurrentPage++
+		} else {
+			return
+		}
+		bot.Cache.Set(fmt.Sprintf("%s_transactions", user.Name), transactionsList, &store.Options{Expiration: 1 * time.Minute})
+		bot.tryEditMessage(c.Message, transactionsList.printTransactions(ctx), bot.makeTransactionsKeyboard(ctx, transactionsList))
+	}
+	return
+}
+
+func (bot *TipBot) transactionsScrollRightHandler(ctx context.Context, c *tb.Callback) {
+	user := LoadUser(ctx)
+	transactionsListInterface, err := bot.Cache.Get(fmt.Sprintf("%s_transactions", user.Name))
+	if err != nil {
+		log.Info("Transactions not in cache anymore")
+		return
+	}
+	transactionsList := transactionsListInterface.(TransactionsList)
+
+	if c.Sender.ID == transactionsList.User.Telegram.ID {
+		if transactionsList.CurrentPage > 0 {
+			transactionsList.CurrentPage--
+		} else {
+			return
+		}
+		bot.Cache.Set(fmt.Sprintf("%s_transactions", user.Name), transactionsList, &store.Options{Expiration: 1 * time.Minute})
+		bot.tryEditMessage(c.Message, transactionsList.printTransactions(ctx), bot.makeTransactionsKeyboard(ctx, transactionsList))
+	}
+	return
 }

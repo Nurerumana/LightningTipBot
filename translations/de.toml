@@ -117,6 +117,7 @@ advancedMessage = """%s
 📖 Du kannst Inline Befehle in jedem Chat verwenden, sogar in privaten Nachrichten. Warte eine Sekunde, nachdem du den Befehl eingegeben hast und *klicke* auf das Ergebnis, statt Enter einzugeben.
 
 ⚙️ *Fortgeschrittene Befehle*
+*/transactions* 📃 Liste deiner Transaktionen.
 */link* 🔗 Verbinde dein Wallet mit [BlueWallet](https://bluewallet.io/) oder [Zeus](https://zeusln.app/)
 */lnurl* ⚡️ Lnurl empfangen oder senden: `/lnurl` or `/lnurl <lnurl>`
 */faucet* 🚰 Erzeuge einen Zapfhahn: `/faucet <gesamt> <pro_user>`

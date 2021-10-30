@@ -117,6 +117,7 @@ advancedMessage = """%s
 📖 Je kunt inline commando's in elke chat gebruiken, zelfs in privé gesprekken. Wacht een seconde na het invoeren van een inline commando en *klik* op het resultaat, druk niet op enter.
 
 ⚙️ *Geavanceerde opdrachten*
+*/transactions* 📃 List your transactions.
 */link* 🔗 Koppel uw wallet aan [BlueWallet](https://bluewallet.io/) of [Zeus](https://zeusln.app/)
 */lnurl* ⚡️ Lnurl ontvangen of betalen: `/lnurl` of `/lnurl <lnurl>`
 */faucet* 🚰 Maak een kraan: `/faucet <capacity> <per_user>`

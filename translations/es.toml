@@ -117,6 +117,7 @@ advancedMessage = """%s
 📖 Puedes usar comandos _inline_ en todos los chats, incluso en las conversaciones privadas. Espera un segundo después de introducir un comando _inline_ y *haz clic* en el resultado, no pulses enter.
 
 ⚙️ *Comandos avanzados*
+*/transactions* 📃 List your transactions.
 */link* 🔗 Enlaza tu monedero a [ BlueWallet ](https://bluewallet.io/) o [ Zeus ](https://zeusln.app/)
 */lnurl* ⚡️ Lnurl recibir o pagar: `/lnurl` o `/lnurl <lnurl>`
 */faucet* 🚰 Crear un grifo: `/faucet <capacidad> <por_usuario>`

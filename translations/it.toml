@@ -117,6 +117,7 @@ advancedMessage = """%s
 📖 Puoi usare i comandi in linea in ogni chat, anche nelle conversazioni private. Attendi un secondo dopo aver inviato un comando in linea e *clicca* sull'azione desiderata, non premere invio.
 
 ⚙️ *Comandi avanzati*
+*/transactions* 📃 List your transactions.
 */link* 🔗 Crea un collegamento al tuo wallet [BlueWallet](https://bluewallet.io/) o [Zeus](https://zeusln.app/)
 */lnurl* ⚡️ Ricevi o paga un Lnurl: `/lnurl` or `/lnurl <lnurl>`
 */faucet* 🚰 Crea una distribuzione: `/faucet <totale> <per_utente>`

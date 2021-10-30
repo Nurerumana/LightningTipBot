@@ -117,6 +117,7 @@ advancedMessage = """%s
 📖 Kamu dapat menggunakan sebaris perintah di tiap percakapan, bahkan di percakapan privat. Tunggu sejenak setelah memasukkan sebaris perintah lalu *pencet* hasilnya, jangan tekan enter.
 
 ⚙️ *Perintah lanjutan*
+*/transactions* 📃 List your transactions.
 */link* 🔗 Menghubungkan dompet mu ke [BlueWallet](https://bluewallet.io/) atau [Zeus](https://zeusln.app/)
 */lnurl* ⚡️ Lnurl menerima atau membayar: `/lnurl` atau `/lnurl <lnurl>`
 */faucet* 🚰 Membuat sebuah keran `/faucet <kapasitas> <per_pengguna>`

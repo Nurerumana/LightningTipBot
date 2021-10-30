@@ -347,5 +347,19 @@ func (bot TipBot) getHandler() []Handler {
 				Type:   CallbackInterceptor,
 				Before: []intercept.Func{bot.loadUserInterceptor}},
 		},
+		{
+			Endpoints: []interface{}{&btnLeftTransactionsButton},
+			Handler:   bot.transactionsScrollLeftHandler,
+			Interceptor: &Interceptor{
+				Type:   CallbackInterceptor,
+				Before: []intercept.Func{bot.loadUserInterceptor}},
+		},
+		{
+			Endpoints: []interface{}{&btnRightTransactionsButton},
+			Handler:   bot.transactionsScrollRightHandler,
+			Interceptor: &Interceptor{
+				Type:   CallbackInterceptor,
+				Before: []intercept.Func{bot.loadUserInterceptor}},
+		},
 	}
 }
