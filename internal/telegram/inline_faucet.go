@@ -185,7 +185,13 @@ func (bot TipBot) faucetHandler(ctx context.Context, m *tb.Message) {
 		return
 	}
 	fromUserStr := GetUserStr(m.Sender)
-	bot.trySendMessage(m.Chat, inlineFaucet.Message, bot.makeFaucetKeyboard(ctx, inlineFaucet.ID))
+	faucetMsg := bot.trySendMessage(m.Chat, inlineFaucet.Message, bot.makeFaucetKeyboard(ctx, inlineFaucet.ID))
+
+	inlineFaucet.Base.MessageID = fmt.Sprint(faucetMsg.ID)
+	inlineFaucet.Base.ChatID = fmt.Sprint(-faucetMsg.Chat.ID)
+	inlineFaucet.Base.MessageURL = fmt.Sprintf("https://t.me/c/%s/%s", inlineFaucet.ChatID[3:], inlineFaucet.Base.MessageID)
+
+	bot.trySendMessage(m.Chat, inlineFaucet.Base.MessageURL)
 	log.Infof("[faucet] %s created faucet %s: %d sat (%d per user)", fromUserStr, inlineFaucet.ID, inlineFaucet.Amount, inlineFaucet.PerUserAmount)
 	runtime.IgnoreError(inlineFaucet.Set(inlineFaucet, bot.Bunt))
 }

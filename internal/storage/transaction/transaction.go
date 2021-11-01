@@ -13,6 +13,9 @@ type Base struct {
 	InTransaction bool      `json:"intransaction"`
 	CreatedAt     time.Time `json:"created"`
 	UpdatedAt     time.Time `json:"updated"`
+	MessageID     string    `json:"messageid"`
+	ChatID        string    `json:"chatid"`
+	MessageURL    string    `json:"messageurl"`
 }
 
 type Option func(b *Base)

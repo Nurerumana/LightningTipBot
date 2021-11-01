@@ -182,7 +182,13 @@ func (bot TipBot) tipjarHandler(ctx context.Context, m *tb.Message) {
 		return
 	}
 	toUserStr := GetUserStr(m.Sender)
-	bot.trySendMessage(m.Chat, inlineTipjar.Message, bot.makeTipjarKeyboard(ctx, inlineTipjar))
+	tipjarMsg := bot.trySendMessage(m.Chat, inlineTipjar.Message, bot.makeTipjarKeyboard(ctx, inlineTipjar))
+
+	inlineTipjar.Base.MessageID = fmt.Sprint(tipjarMsg.ID)
+	inlineTipjar.Base.ChatID = fmt.Sprint(-tipjarMsg.Chat.ID)
+	inlineTipjar.Base.MessageURL = fmt.Sprintf("https://t.me/c/%s/%s", inlineTipjar.ChatID[3:], inlineTipjar.Base.MessageID)
+	bot.trySendMessage(m.Chat, inlineTipjar.Base.MessageURL)
+
 	log.Infof("[tipjar] %s created tipjar %s: %d sat (%d per user)", toUserStr, inlineTipjar.ID, inlineTipjar.Amount, inlineTipjar.PerUserAmount)
 	runtime.IgnoreError(inlineTipjar.Set(inlineTipjar, bot.Bunt))
 }
