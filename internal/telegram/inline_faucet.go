@@ -31,18 +31,18 @@ var (
 
 const idTemplate = "faucet-%d-%d-%s"
 
-type InlineFaucet struct {
+type Faucet struct {
 	*storage.Base
-	Message         string         `json:"inline_faucet_message"`
-	Amount          int64          `json:"inline_faucet_amount"`
-	RemainingAmount int64          `json:"inline_faucet_remainingamount"`
-	PerUserAmount   int64          `json:"inline_faucet_peruseramount"`
-	From            *lnbits.User   `json:"inline_faucet_from"`
-	To              []*lnbits.User `json:"inline_faucet_to"`
-	Memo            string         `json:"inline_faucet_memo"`
-	NTotal          int            `json:"inline_faucet_ntotal"`
-	NTaken          int            `json:"inline_faucet_ntaken"`
-	UserNeedsWallet bool           `json:"inline_faucet_userneedswallet"`
+	Message         string         `json:"faucet_message"`
+	Amount          int64          `json:"faucet_amount"`
+	RemainingAmount int64          `json:"faucet_remainingamount"`
+	PerUserAmount   int64          `json:"faucet_peruseramount"`
+	From            *lnbits.User   `json:"faucet_from"`
+	To              []*lnbits.User `json:"faucet_to"`
+	Memo            string         `json:"faucet_memo"`
+	NTotal          int            `json:"faucet_ntotal"`
+	NTaken          int            `json:"faucet_ntaken"`
+	UserNeedsWallet bool           `json:"faucet_userneedswallet"`
 	LanguageCode    string         `json:"languagecode"`
 }
 
@@ -54,7 +54,7 @@ func (bot TipBot) mapFaucetLanguage(ctx context.Context, command string) context
 	return ctx
 }
 
-func (bot TipBot) createFaucet(ctx context.Context, text string, inline bool, sender *tb.User) (*InlineFaucet, error) {
+func (bot TipBot) createFaucet(ctx context.Context, text string, inline bool, sender *tb.User) (*Faucet, error) {
 	amount, err := decodeAmountFromCommand(text)
 	if err != nil {
 		return nil, errors.New(errors.DecodeAmountError, err)
@@ -94,7 +94,7 @@ func (bot TipBot) createFaucet(ctx context.Context, text string, inline bool, se
 		id = fmt.Sprintf("inl-%s", id)
 	}
 
-	return &InlineFaucet{
+	return &Faucet{
 		Base:            storage.New(storage.ID(id)),
 		Message:         inlineMessage,
 		Amount:          amount,
@@ -181,7 +181,7 @@ func (bot TipBot) makeFaucetKeyboard(ctx context.Context, id string) *tb.ReplyMa
 	return inlineFaucetMenu
 }
 
-func (bot TipBot) faucetHandler(ctx context.Context, m *tb.Message) {
+func (bot TipBot) createFaucetHandler(ctx context.Context, m *tb.Message) {
 	bot.anyTextHandler(ctx, m)
 	if m.Private() {
 		bot.trySendMessage(m.Sender, fmt.Sprintf(Translate(ctx, "inlineFaucetHelpText"), Translate(ctx, "inlineFaucetHelpFaucetInGroup")))
@@ -199,11 +199,11 @@ func (bot TipBot) faucetHandler(ctx context.Context, m *tb.Message) {
 	runtime.IgnoreError(inlineFaucet.Set(inlineFaucet, bot.Bunt))
 }
 
-func (bot TipBot) handleInlineFaucetQuery(ctx context.Context, q *tb.Query) {
+func (bot TipBot) createInlineFaucetHandler(ctx context.Context, q *tb.Query) {
 	inlineFaucet, err := bot.createFaucet(ctx, q.Text, true, &q.From)
 	if err != nil {
 		bot.handleFaucetError(ctx, q, err)
-		log.Errorf("[handleInlineFaucetQuery] %s", err.Error())
+		log.Errorf("[createInlineFaucetHandler] %s", err.Error())
 		return
 	}
 	urls := []string{
@@ -237,17 +237,17 @@ func (bot TipBot) handleInlineFaucetQuery(ctx context.Context, q *tb.Query) {
 	}
 }
 
-func (bot *TipBot) acceptInlineFaucetHandler(ctx context.Context, c *tb.Callback) {
+func (bot *TipBot) acceptFaucetHandler(ctx context.Context, c *tb.Callback) {
 	to := LoadUser(ctx)
-	tx := &InlineFaucet{Base: storage.New(storage.ID(c.Data))}
+	tx := &Faucet{Base: storage.New(storage.ID(c.Data))}
 	mutex.LockWithContext(ctx, tx.ID)
 	defer mutex.UnlockWithContext(ctx, tx.ID)
 	fn, err := tx.Get(tx, bot.Bunt)
 	if err != nil {
-		log.Debugf("[acceptInlineFaucetHandler] %s", err.Error())
+		log.Debugf("[acceptFaucetHandler] %s", err.Error())
 		return
 	}
-	inlineFaucet := fn.(*InlineFaucet)
+	inlineFaucet := fn.(*Faucet)
 	from := inlineFaucet.From
 	// log faucet link if possible
 	if c.Message != nil && c.Message.Chat != nil {
@@ -353,7 +353,7 @@ func (bot *TipBot) acceptInlineFaucetHandler(ctx context.Context, c *tb.Callback
 }
 
 func (bot *TipBot) cancelInlineFaucet(ctx context.Context, c *tb.Callback, ignoreID bool) {
-	tx := &InlineFaucet{Base: storage.New(storage.ID(c.Data))}
+	tx := &Faucet{Base: storage.New(storage.ID(c.Data))}
 	mutex.LockWithContext(ctx, tx.ID)
 	defer mutex.UnlockWithContext(ctx, tx.ID)
 	fn, err := tx.Get(tx, bot.Bunt)
@@ -362,7 +362,7 @@ func (bot *TipBot) cancelInlineFaucet(ctx context.Context, c *tb.Callback, ignor
 		return
 	}
 
-	inlineFaucet := fn.(*InlineFaucet)
+	inlineFaucet := fn.(*Faucet)
 	if ignoreID || c.Sender.ID == inlineFaucet.From.Telegram.ID {
 		bot.tryEditMessage(c.Message, i18n.Translate(inlineFaucet.LanguageCode, "inlineFaucetCancelledMessage"), &tb.ReplyMarkup{})
 		// set the inlineFaucet inactive
@@ -375,7 +375,7 @@ func (bot *TipBot) cancelInlineFaucet(ctx context.Context, c *tb.Callback, ignor
 	return
 }
 
-func (bot *TipBot) finishFaucet(ctx context.Context, c *tb.Callback, inlineFaucet *InlineFaucet) {
+func (bot *TipBot) finishFaucet(ctx context.Context, c *tb.Callback, inlineFaucet *Faucet) {
 	inlineFaucet.Message = fmt.Sprintf(i18n.Translate(inlineFaucet.LanguageCode, "inlineFaucetEndedMessage"), inlineFaucet.Amount, inlineFaucet.NTaken)
 	if inlineFaucet.UserNeedsWallet {
 		inlineFaucet.Message += "\n\n" + fmt.Sprintf(i18n.Translate(inlineFaucet.LanguageCode, "inlineFaucetCreateWalletMessage"), GetUserStrMd(bot.Telegram.Me))
