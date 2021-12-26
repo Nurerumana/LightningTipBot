@@ -29,6 +29,8 @@ var (
 	btnAcceptInlineFaucet = inlineFaucetMenu.Data("✅ Collect", "confirm_faucet_inline")
 )
 
+const idTemplate = "faucet-%d-%d-%s"
+
 type InlineFaucet struct {
 	*storage.Base
 	Message         string         `json:"inline_faucet_message"`
@@ -52,7 +54,7 @@ func (bot TipBot) mapFaucetLanguage(ctx context.Context, command string) context
 	return ctx
 }
 
-func (bot TipBot) createFaucet(ctx context.Context, text string, sender *tb.User) (*InlineFaucet, error) {
+func (bot TipBot) createFaucet(ctx context.Context, text string, inline bool, sender *tb.User) (*InlineFaucet, error) {
 	amount, err := decodeAmountFromCommand(text)
 	if err != nil {
 		return nil, errors.New(errors.DecodeAmountError, err)
@@ -86,7 +88,11 @@ func (bot TipBot) createFaucet(ctx context.Context, text string, sender *tb.User
 	if len(memo) > 0 {
 		inlineMessage = inlineMessage + fmt.Sprintf(Translate(ctx, "inlineFaucetAppendMemo"), memo)
 	}
-	id := fmt.Sprintf("inl-faucet-%d-%d-%s", sender.ID, amount, RandStringRunes(5))
+
+	id := fmt.Sprintf(idTemplate, sender.ID, amount, RandStringRunes(5))
+	if inline {
+		id = fmt.Sprintf("inl-%s", id)
+	}
 
 	return &InlineFaucet{
 		Base:            storage.New(storage.ID(id)),
@@ -103,66 +109,62 @@ func (bot TipBot) createFaucet(ctx context.Context, text string, sender *tb.User
 	}, nil
 
 }
-func (bot TipBot) makeFaucet(ctx context.Context, m *tb.Message, query bool) (*InlineFaucet, error) {
-	faucet, err := bot.createFaucet(ctx, m.Text, m.Sender)
-	if err != nil {
-		switch err.(errors.TipBotError).Code {
-		case errors.DecodeAmountError:
+func (bot TipBot) handleFaucetError(ctx context.Context, faucet interface{}, err error) {
+	var m *tb.Message
+	var q *tb.Query
+	switch faucet.(type) {
+	case *tb.Message:
+		m = faucet.(*tb.Message)
+	case *tb.Query:
+		q = faucet.(*tb.Query)
+	}
+	switch err.(errors.TipBotError).Code {
+	case errors.DecodeAmountError:
+		if q != nil {
+			bot.inlineQueryReplyWithError(q, TranslateUser(ctx, "inlineQueryFaucetTitle"), fmt.Sprintf(TranslateUser(ctx, "inlineQueryFaucetDescription"), bot.Telegram.Me.Username))
+		} else if m != nil {
 			bot.trySendMessage(m.Sender, fmt.Sprintf(Translate(ctx, "inlineFaucetHelpText"), Translate(ctx, "inlineFaucetInvalidAmountMessage")))
 			bot.tryDeleteMessage(m)
-			return nil, err
-		case errors.DecodePerUserAmountError:
+		}
+
+	case errors.DecodePerUserAmountError:
+		if q != nil {
+			bot.inlineQueryReplyWithError(q, TranslateUser(ctx, "inlineQueryFaucetTitle"), fmt.Sprintf(TranslateUser(ctx, "inlineQueryFaucetDescription"), bot.Telegram.Me.Username))
+		} else if m != nil {
 			bot.trySendMessage(m.Sender, fmt.Sprintf(Translate(ctx, "inlineFaucetHelpText"), ""))
 			bot.tryDeleteMessage(m)
-			return nil, err
-		case errors.InvalidAmountError:
+		}
+
+	case errors.InvalidAmountError:
+		if q != nil {
+			bot.inlineQueryReplyWithError(q, TranslateUser(ctx, "inlineSendInvalidAmountMessage"), fmt.Sprintf(TranslateUser(ctx, "inlineQueryFaucetDescription"), bot.Telegram.Me.Username))
+		} else if m != nil {
 			bot.trySendMessage(m.Sender, fmt.Sprintf(Translate(ctx, "inlineFaucetHelpText"), Translate(ctx, "inlineFaucetInvalidAmountMessage")))
 			bot.tryDeleteMessage(m)
-			return nil, err
-		case errors.InvalidAmountPerUserError:
+		}
+
+	case errors.InvalidAmountPerUserError:
+		if q != nil {
+			bot.inlineQueryReplyWithError(q, TranslateUser(ctx, "inlineFaucetInvalidPeruserAmountMessage"), fmt.Sprintf(TranslateUser(ctx, "inlineQueryFaucetDescription"), bot.Telegram.Me.Username))
+		} else if m != nil {
 			bot.trySendMessage(m.Sender, fmt.Sprintf(Translate(ctx, "inlineFaucetHelpText"), Translate(ctx, "inlineFaucetInvalidPeruserAmountMessage")))
 			bot.tryDeleteMessage(m)
-			return nil, err
-		case errors.GetBalanceError:
-			// log.Errorln(err.Error())
+		}
+	case errors.GetBalanceError:
+		if q != nil {
+			bot.inlineQueryReplyWithError(q, TranslateUser(ctx, "inlineQueryFaucetTitle"), fmt.Sprintf(TranslateUser(ctx, "inlineQueryFaucetDescription"), bot.Telegram.Me.Username))
+		} else if m != nil {
 			bot.tryDeleteMessage(m)
-			return nil, err
-		case errors.BalanceToLowError:
-			// log.Errorf(err.Error())
+		}
+	case errors.BalanceToLowError:
+		if q != nil {
+			bot.inlineQueryReplyWithError(q, TranslateUser(ctx, "inlineSendBalanceLowMessage"), fmt.Sprintf(TranslateUser(ctx, "inlineQueryFaucetDescription"), bot.Telegram.Me.Username))
+		} else if m != nil {
 			bot.trySendMessage(m.Sender, Translate(ctx, "inlineSendBalanceLowMessage"))
 			bot.tryDeleteMessage(m)
-			return nil, err
 		}
-	}
-	return faucet, err
-}
 
-func (bot TipBot) makeQueryFaucet(ctx context.Context, q *tb.Query, query bool) (*InlineFaucet, error) {
-	faucet, err := bot.createFaucet(ctx, q.Text, &q.From)
-	if err != nil {
-		switch err.(errors.TipBotError).Code {
-		case errors.DecodeAmountError:
-			bot.inlineQueryReplyWithError(q, TranslateUser(ctx, "inlineQueryFaucetTitle"), fmt.Sprintf(TranslateUser(ctx, "inlineQueryFaucetDescription"), bot.Telegram.Me.Username))
-			return nil, err
-		case errors.DecodePerUserAmountError:
-			bot.inlineQueryReplyWithError(q, TranslateUser(ctx, "inlineQueryFaucetTitle"), fmt.Sprintf(TranslateUser(ctx, "inlineQueryFaucetDescription"), bot.Telegram.Me.Username))
-			return nil, err
-		case errors.InvalidAmountError:
-			bot.inlineQueryReplyWithError(q, TranslateUser(ctx, "inlineSendInvalidAmountMessage"), fmt.Sprintf(TranslateUser(ctx, "inlineQueryFaucetDescription"), bot.Telegram.Me.Username))
-			return nil, err
-		case errors.InvalidAmountPerUserError:
-			bot.inlineQueryReplyWithError(q, TranslateUser(ctx, "inlineFaucetInvalidPeruserAmountMessage"), fmt.Sprintf(TranslateUser(ctx, "inlineQueryFaucetDescription"), bot.Telegram.Me.Username))
-			return nil, err
-		case errors.GetBalanceError:
-			bot.inlineQueryReplyWithError(q, TranslateUser(ctx, "inlineQueryFaucetTitle"), fmt.Sprintf(TranslateUser(ctx, "inlineQueryFaucetDescription"), bot.Telegram.Me.Username))
-			return nil, err
-		case errors.BalanceToLowError:
-			log.Errorf(err.Error())
-			bot.inlineQueryReplyWithError(q, TranslateUser(ctx, "inlineSendBalanceLowMessage"), fmt.Sprintf(TranslateUser(ctx, "inlineQueryFaucetDescription"), bot.Telegram.Me.Username))
-			return nil, err
-		}
 	}
-	return faucet, err
 }
 
 func (bot TipBot) makeFaucetKeyboard(ctx context.Context, id string) *tb.ReplyMarkup {
@@ -186,7 +188,7 @@ func (bot TipBot) faucetHandler(ctx context.Context, m *tb.Message) {
 		return
 	}
 	ctx = bot.mapFaucetLanguage(ctx, m.Text)
-	inlineFaucet, err := bot.makeFaucet(ctx, m, false)
+	inlineFaucet, err := bot.createFaucet(ctx, m.Text, false, m.Sender)
 	if err != nil {
 		log.Warnf("[faucet] %s", err.Error())
 		return
@@ -198,8 +200,9 @@ func (bot TipBot) faucetHandler(ctx context.Context, m *tb.Message) {
 }
 
 func (bot TipBot) handleInlineFaucetQuery(ctx context.Context, q *tb.Query) {
-	inlineFaucet, err := bot.makeQueryFaucet(ctx, q, false)
+	inlineFaucet, err := bot.createFaucet(ctx, q.Text, true, &q.From)
 	if err != nil {
+		bot.handleFaucetError(ctx, q, err)
 		log.Errorf("[handleInlineFaucetQuery] %s", err.Error())
 		return
 	}
