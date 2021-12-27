@@ -146,6 +146,9 @@ func (bot TipBot) anyQueryHandler(ctx context.Context, q *tb.Query) {
 	if strings.HasPrefix(q.Text, "send") || strings.HasPrefix(q.Text, "pay") {
 		bot.handleInlineSendQuery(ctx, q)
 	}
+	if strings.HasPrefix(q.Text, "volcano") {
+		//bot.handleInlineVolcanoQuery(ctx, q)
+	}
 
 	if strings.HasPrefix(q.Text, "faucet") || strings.HasPrefix(q.Text, "zapfhahn") || strings.HasPrefix(q.Text, "kraan") || strings.HasPrefix(q.Text, "grifo") {
 		if len(strings.Split(q.Text, " ")) > 1 {
