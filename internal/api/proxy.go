@@ -2,11 +2,12 @@ package api
 
 import (
 	"fmt"
-	log "github.com/sirupsen/logrus"
 	"io"
 	"net/http"
 	"net/url"
 	"time"
+
+	log "github.com/sirupsen/logrus"
 )
 
 func Proxy(wr http.ResponseWriter, req *http.Request, rawUrl string) error {
@@ -20,7 +21,7 @@ func Proxy(wr http.ResponseWriter, req *http.Request, rawUrl string) error {
 	u, err := url.Parse(rawUrl)
 	if err != nil {
 		http.Error(wr, "Server Error", http.StatusInternalServerError)
-		log.Println("ServeHTTP:", err)
+		log.Warnln("ServeHTTP:", err)
 		return err
 	}
 	req.URL.Host = u.Host
@@ -29,7 +30,7 @@ func Proxy(wr http.ResponseWriter, req *http.Request, rawUrl string) error {
 	resp, err := client.Do(req)
 	if err != nil {
 		http.Error(wr, "Server Error", http.StatusInternalServerError)
-		log.Println("ServeHTTP:", err)
+		log.Warnln("ServeHTTP:", err)
 		return err
 	}
 	defer resp.Body.Close()
