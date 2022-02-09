@@ -26,16 +26,16 @@ var Client = &http.Client{
 }
 
 type LNDParams struct {
-	Cert     string
+	Cert     []byte
 	Host     string
 	Macaroon string
 }
 
-func (l LNDParams) getCert() string { return l.Cert }
+func (l LNDParams) getCert() []byte { return l.Cert }
 func (l LNDParams) isTor() bool     { return strings.Index(l.Host, ".onion") != -1 }
 
 type BackendParams interface {
-	getCert() string
+	getCert() []byte
 	isTor() bool
 }
 
@@ -57,9 +57,12 @@ func GetInvoice(params Params) (string, error) {
 	specialTransport := &http.Transport{}
 
 	// use a cert or skip TLS verification?
-	if params.Backend.getCert() != "" {
+	if params.Backend.getCert() == nil {
 		caCertPool := x509.NewCertPool()
-		caCertPool.AppendCertsFromPEM([]byte(params.Backend.getCert()))
+		ok := caCertPool.AppendCertsFromPEM([]byte(params.Backend.getCert()))
+		if !ok {
+			return "", fmt.Errorf("invalid root certificate")
+		}
 		specialTransport.TLSClientConfig = &tls.Config{RootCAs: caCertPool}
 	} else {
 		specialTransport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
