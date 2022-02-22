@@ -14,21 +14,24 @@ import (
 	"strings"
 	"time"
 
+	"github.com/LightningTipBot/LightningTipBot/internal"
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
 )
 
 // from github.com/fiatjaf/makeinvoice
 
-var TorProxyURL = "socks5://127.0.0.1:9050"
+var TorProxyURL = internal.Configuration.Bot.HttpProxy
+
 var Client = &http.Client{
 	Timeout: 10 * time.Second,
 }
 
 type LNDParams struct {
-	Cert     []byte
-	Host     string
-	Macaroon string
+	Cert       []byte `json:"to" gorm:"-"`
+	CertString string `json:"certstring"`
+	Host       string `json:"host"`
+	Macaroon   string `json:"macaroon"`
 }
 
 func (l LNDParams) getCert() []byte { return l.Cert }
@@ -49,7 +52,6 @@ type Params struct {
 }
 
 func GetInvoice(params Params) (string, error) {
-
 	defer func(prevTransport http.RoundTripper) {
 		Client.Transport = prevTransport
 	}(Client.Transport)
@@ -68,12 +70,12 @@ func GetInvoice(params Params) (string, error) {
 		specialTransport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 	}
 
+	// info: always use http proxy
 	// use a tor proxy?
-	if params.Backend.isTor() {
-		torURL, _ := url.Parse(TorProxyURL)
-		specialTransport.Proxy = http.ProxyURL(torURL)
-	}
-
+	// if params.Backend.isTor() {
+	torURL, _ := url.Parse(TorProxyURL)
+	specialTransport.Proxy = http.ProxyURL(torURL)
+	// }
 	Client.Transport = specialTransport
 
 	// description hash?
