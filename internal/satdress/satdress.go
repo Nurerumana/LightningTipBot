@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"net/url"
 	"strings"
 	"time"
 
@@ -59,7 +58,7 @@ func GetInvoice(params Params) (string, error) {
 	specialTransport := &http.Transport{}
 
 	// use a cert or skip TLS verification?
-	if params.Backend.getCert() == nil {
+	if params.Backend.getCert() != nil {
 		caCertPool := x509.NewCertPool()
 		ok := caCertPool.AppendCertsFromPEM([]byte(params.Backend.getCert()))
 		if !ok {
@@ -70,15 +69,15 @@ func GetInvoice(params Params) (string, error) {
 		specialTransport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 	}
 
+	// todo -- commenting out proxy for dev
 	// info: always use http proxy
 	// use a tor proxy?
 	// if params.Backend.isTor() {
-	torURL, _ := url.Parse(TorProxyURL)
-	specialTransport.Proxy = http.ProxyURL(torURL)
+	// torURL, _ := url.Parse(TorProxyURL)
+	// specialTransport.Proxy = http.ProxyURL(torURL)
 	// }
 
-	// todo -- commenting out proxy for dev
-	// Client.Transport = specialTransport
+	Client.Transport = specialTransport
 
 	// description hash?
 	var _, b64h string
