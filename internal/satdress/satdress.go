@@ -76,7 +76,9 @@ func GetInvoice(params Params) (string, error) {
 	torURL, _ := url.Parse(TorProxyURL)
 	specialTransport.Proxy = http.ProxyURL(torURL)
 	// }
-	Client.Transport = specialTransport
+
+	// todo -- commenting out proxy for dev
+	// Client.Transport = specialTransport
 
 	// description hash?
 	var _, b64h string
