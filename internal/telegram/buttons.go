@@ -32,8 +32,8 @@ var (
 
 func init() {
 	mainMenu.Reply(
-		mainMenu.Row(btnBalanceMainMenu, btnHelpMainMenu),
-		mainMenu.Row(btnInvoiceMainMenu, btnSendMainMenu),
+		mainMenu.Row(btnBalanceMainMenu),
+		mainMenu.Row(btnInvoiceMainMenu, btnSendMainMenu, btnHelpMainMenu),
 	)
 }
 
@@ -71,15 +71,16 @@ func (bot *TipBot) mainMenuBalanceButtonUpdate(to int64) {
 	}
 	if user.Wallet != nil {
 		amount, err := bot.GetUserBalanceCached(user)
-		if err == nil {
-			log.Tracef("[appendMainMenu] user %s balance %d sat", GetUserStr(user.Telegram), amount)
-			MainMenuCommandBalance := fmt.Sprintf("%s %d sat", MainMenuCommandBalance, amount)
-			btnBalanceMainMenu = mainMenu.Text(MainMenuCommandBalance)
-			mainMenu.Reply(
-				mainMenu.Row(btnBalanceMainMenu),
-				mainMenu.Row(btnInvoiceMainMenu, btnSendMainMenu, btnHelpMainMenu),
-			)
+		if err != nil {
+			amount = 0
 		}
+		log.Tracef("[appendMainMenu] user %s balance %d sat", GetUserStr(user.Telegram), amount)
+		MainMenuCommandBalance := fmt.Sprintf("%s %d sat", MainMenuCommandBalance, amount)
+		btnBalanceMainMenu = mainMenu.Text(MainMenuCommandBalance)
+		mainMenu.Reply(
+			mainMenu.Row(btnBalanceMainMenu),
+			mainMenu.Row(btnInvoiceMainMenu, btnSendMainMenu, btnHelpMainMenu),
+		)
 	}
 }
 
