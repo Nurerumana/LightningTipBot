@@ -89,7 +89,7 @@ func ColumnMigrationTasks(db *gorm.DB) error {
 	}
 
 	// todo -- add more database field migrations here in the future
-	return err
+	return db.AutoMigrate(&lnbits.UserSetting{})
 }
 
 func AutoMigration() *Databases {
