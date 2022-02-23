@@ -34,13 +34,13 @@ type User struct {
 	AnonIDSha256 string       `json:"anon_id_sha256"`
 	UUID         string       `json:"uuid"`
 	Banned       bool         `json:"banned"`
-	Settings     UserSetting  `json:"settings" gorm:"foreignKey:UserID"`
+	Settings     UserSetting  `json:"settings" gorm:"foreignKey:user_id"`
 }
 
 type UserSetting struct {
-	UserID    string `json:"user_id"`
-	NodeType  string `json:"nodetype"`
-	LNDParams *satdress.LNDParams
+	UserID    string              `json:"user_id"`
+	NodeType  string              `json:"nodetype"`
+	LNDParams *satdress.LNDParams `gorm:"embedded;embeddedPrefix:lndparams_"`
 }
 
 const (
