@@ -6,7 +6,6 @@ import (
 	"encoding/hex"
 	"encoding/pem"
 	"fmt"
-	"strconv"
 	"strings"
 
 	"github.com/LightningTipBot/LightningTipBot/internal/lnbits"
@@ -17,8 +16,11 @@ import (
 
 // todo -- this needs to go somewhere database related
 func GetUserSettings(u *tb.User, bot TipBot) (*lnbits.UserSetting, error) {
-	user := &lnbits.User{Name: strconv.FormatInt(u.ID, 10)}
-	userSetting := &lnbits.UserSetting{User: user}
+	user, err := GetUser(u, bot)
+	if err != nil {
+		return &lnbits.UserSetting{}, err
+	}
+	userSetting := &lnbits.UserSetting{UserID: user.ID}
 	tx := bot.DB.Usersettings.First(userSetting)
 	if tx.Error != nil {
 		errmsg := fmt.Sprintf("[GetUserSettings] Couldn't fetch %s from Database: %s", GetUserStr(u), tx.Error.Error())
@@ -84,7 +86,7 @@ func (bot *TipBot) registerNodeHandler(ctx context.Context, m *tb.Message) (cont
 	lndparams, err := parseUserSettingInput(ctx, m)
 
 	usersettings = &lnbits.UserSetting{
-		User:      user,
+		UserID:    user.ID,
 		NodeType:  "LndRest",
 		LNDParams: &lndparams,
 	}

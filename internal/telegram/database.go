@@ -115,7 +115,7 @@ func AutoMigration() *Databases {
 		panic(err)
 	}
 
-	usersetting, err := gorm.Open(sqlite.Open(internal.Configuration.Database.TransactionsPath), &gorm.Config{DisableForeignKeyConstraintWhenMigrating: true, FullSaveAssociations: true})
+	usersetting, err := gorm.Open(sqlite.Open(internal.Configuration.Database.DbPath), &gorm.Config{DisableForeignKeyConstraintWhenMigrating: true, FullSaveAssociations: true})
 	if err != nil {
 		panic("Initialize orm failed.")
 	}
