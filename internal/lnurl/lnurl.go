@@ -3,12 +3,16 @@ package lnurl
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/eko/gocache/store"
+	tb "gopkg.in/lightningtipbot/telebot.v2"
 
 	"github.com/LightningTipBot/LightningTipBot/internal"
 	"github.com/LightningTipBot/LightningTipBot/internal/api"
@@ -38,13 +42,16 @@ type Invoice struct {
 	CreatedAt time.Time    `json:"created_at"`
 	Paid      bool         `json:"paid"`
 	PaidAt    time.Time    `json:"paid_at"`
+	From      string       `json:"from"`
 }
 type Lnurl struct {
+	telegram         *tb.Bot
 	c                *lnbits.Client
 	database         *gorm.DB
 	callbackHostname *url.URL
 	buntdb           *storage.DB
 	WebhookServer    string
+	cache            telegram.Cache
 }
 
 func New(bot *telegram.TipBot) Lnurl {
@@ -54,6 +61,8 @@ func New(bot *telegram.TipBot) Lnurl {
 		callbackHostname: internal.Configuration.Bot.LNURLHostUrl,
 		WebhookServer:    internal.Configuration.Lnbits.WebhookServer,
 		buntdb:           bot.Bunt,
+		telegram:         bot.Telegram,
+		cache:            bot.Cache,
 	}
 }
 func (lnurlInvoice Invoice) Key() string {
@@ -82,7 +91,18 @@ func (w Lnurl) Handle(writer http.ResponseWriter, request *http.Request) {
 			api.NotFoundHandler(writer, fmt.Errorf("[handleLnUrl] Comment is too long"))
 			return
 		}
-		response, err = w.serveLNURLpSecond(username, int64(amount), comment)
+
+		// payer data
+		payerdata := request.FormValue("payerdata")
+		var payerData lnurl.PayerDataValues
+		err := json.Unmarshal([]byte(payerdata), &payerData)
+		if err != nil {
+			// api.NotFoundHandler(writer, fmt.Errorf("[handleLnUrl] Couldn't parse payerdata: %v", err))
+			fmt.Errorf("[handleLnUrl] Couldn't parse payerdata: %v", err)
+			fmt.Errorf("[handleLnUrl] payerdata: %v", payerdata)
+		}
+
+		response, err = w.serveLNURLpSecond(username, int64(amount), comment, payerData)
 	}
 	// check if error was returned from first or second handlers
 	if err != nil {
@@ -103,6 +123,30 @@ func (w Lnurl) Handle(writer http.ResponseWriter, request *http.Request) {
 		api.NotFoundHandler(writer, err)
 	}
 }
+func (w Lnurl) getMetaDataCached(username string) lnurl.Metadata {
+	key := fmt.Sprintf("lnurl_metadata_%s", username)
+
+	// load metadata from cache
+	if m, err := w.cache.Get(key); err == nil {
+		return m.(lnurl.Metadata)
+	}
+
+	// otherwise, create new metadata
+	metadata := w.metaData(username)
+
+	// load the user profile picture
+	if internal.Configuration.Bot.LNURLSendImage {
+		// get the user from the database
+		user, tx := findUser(w.database, username)
+		if tx.Error == nil && user.Telegram != nil {
+			addImageToMetaData(w.telegram, &metadata, username, user.Telegram)
+		}
+	}
+
+	// save into cache
+	runtime.IgnoreError(w.cache.Set(key, metadata, &store.Options{Expiration: 30 * time.Minute}))
+	return metadata
+}
 
 // serveLNURLpFirst serves the first part of the LNURLp protocol with the endpoint
 // to call and the metadata that matches the description hash of the second response
@@ -112,7 +156,9 @@ func (w Lnurl) serveLNURLpFirst(username string) (*lnurl.LNURLPayParams, error) 
 	if err != nil {
 		return nil, err
 	}
-	metadata := w.metaData(username)
+
+	// produce the metadata including the image
+	metadata := w.getMetaDataCached(username)
 
 	return &lnurl.LNURLPayParams{
 		LNURLResponse:   lnurl.LNURLResponse{Status: api.StatusOk},
@@ -122,12 +168,16 @@ func (w Lnurl) serveLNURLpFirst(username string) (*lnurl.LNURLPayParams, error) 
 		MaxSendable:     MaxSendable,
 		EncodedMetadata: metadata.Encode(),
 		CommentAllowed:  CommentAllowed,
+		PayerData: &lnurl.PayerDataSpec{
+			FreeName:         &lnurl.PayerDataItemSpec{},
+			LightningAddress: &lnurl.PayerDataItemSpec{},
+			Email:            &lnurl.PayerDataItemSpec{},
+		},
 	}, nil
-
 }
 
 // serveLNURLpSecond serves the second LNURL response with the payment request with the correct description hash
-func (w Lnurl) serveLNURLpSecond(username string, amount_msat int64, comment string) (*lnurl.LNURLPayValues, error) {
+func (w Lnurl) serveLNURLpSecond(username string, amount_msat int64, comment string, payerData lnurl.PayerDataValues) (*lnurl.LNURLPayValues, error) {
 	log.Infof("[LNURL] Serving invoice for user %s", username)
 	if amount_msat < MinSendable || amount_msat > MaxSendable {
 		// amount is not ok
@@ -145,22 +195,7 @@ func (w Lnurl) serveLNURLpSecond(username string, amount_msat int64, comment str
 				Reason: fmt.Sprintf("Comment too long (max: %d characters).", CommentAllowed)},
 		}, fmt.Errorf("comment too long")
 	}
-
-	// now check for the user
-	user := &lnbits.User{}
-	// check if "username" is actually the user ID
-	tx := w.database
-	if _, err := strconv.ParseInt(username, 10, 64); err == nil {
-		// asume it's anon_id
-		tx = w.database.Where("anon_id = ?", username).First(user)
-	} else if strings.HasPrefix(username, "0x") {
-		// asume it's anon_id_sha256
-		tx = w.database.Where("anon_id_sha256 = ?", username).First(user)
-	} else {
-		// assume it's a string @username
-		tx = w.database.Where("telegram_username = ? COLLATE NOCASE", username).First(user)
-	}
-
+	user, tx := findUser(w.database, username)
 	if tx.Error != nil {
 		return &lnurl.LNURLPayValues{
 			LNURLResponse: lnurl.LNURLResponse{
@@ -181,11 +216,24 @@ func (w Lnurl) serveLNURLpSecond(username string, amount_msat int64, comment str
 	var resp *lnurl.LNURLPayValues
 
 	// the same description_hash needs to be built in the second request
-	metadata := w.metaData(username)
-	descriptionHash, err := w.descriptionHash(metadata)
+	metadata := w.getMetaDataCached(username)
+
+	var payerDataByte []byte
+	var err error
+	if payerData.Email != "" || payerData.LightningAddress != "" || payerData.FreeName != "" {
+		payerDataByte, err = json.Marshal(payerData)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		payerDataByte = []byte("")
+	}
+
+	descriptionHash, err := w.descriptionHash(metadata, string(payerDataByte))
 	if err != nil {
 		return nil, err
 	}
+
 	invoice, err := user.Wallet.Invoice(
 		lnbits.InvoiceParams{
 			Amount:          amount_msat / 1000,
@@ -207,13 +255,14 @@ func (w Lnurl) serveLNURLpSecond(username string, amount_msat int64, comment str
 		PaymentHash:    invoice.PaymentHash,
 		Amount:         amount_msat / 1000,
 	}
-	// save lnurl invoice struct for later use (will hold the comment or other metdata for a notification when paid)
+	// save lnurl invoice struct for later use (will hold the comment or other metadata for a notification when paid)
 	runtime.IgnoreError(w.buntdb.Set(
 		Invoice{
 			Invoice:   invoiceStruct,
 			User:      user,
 			Comment:   comment,
 			CreatedAt: time.Now(),
+			From:      extractSenderFromPayerdata(payerData),
 		}))
 	// save the invoice Event that will be loaded when the invoice is paid and trigger the comment display callback
 	runtime.IgnoreError(w.buntdb.Set(
@@ -233,17 +282,97 @@ func (w Lnurl) serveLNURLpSecond(username string, amount_msat int64, comment str
 }
 
 // descriptionHash is the SHA256 hash of the metadata
-func (w Lnurl) descriptionHash(metadata lnurl.Metadata) (string, error) {
-	hash := sha256.Sum256([]byte(metadata.Encode()))
-	hashString := hex.EncodeToString(hash[:])
+func (w Lnurl) descriptionHash(metadata lnurl.Metadata, payerData string) (string, error) {
+	var hashString string
+	var hash [32]byte
+	if len(payerData) == 0 {
+		hash = sha256.Sum256([]byte(metadata.Encode()))
+		hashString = hex.EncodeToString(hash[:])
+	} else {
+		hash = sha256.Sum256([]byte(metadata.Encode() + payerData))
+		hashString = hex.EncodeToString(hash[:])
+	}
 	return hashString, nil
 }
 
 // metaData returns the metadata that is sent in the first response
 // and is used again in the second response to verify the description hash
 func (w Lnurl) metaData(username string) lnurl.Metadata {
+	// this is a bit stupid but if the address is a UUID starting with 1x...
+	// we actually want to find the users username so it looks nicer in the
+	// metadata description
+	if strings.HasPrefix(username, "1x") {
+		user, _ := findUser(w.database, username)
+		if user.Telegram.Username != "" {
+			username = user.Telegram.Username
+		}
+	}
+
 	return lnurl.Metadata{
 		Description:      fmt.Sprintf("Pay to %s@%s", username, w.callbackHostname.Hostname()),
 		LightningAddress: fmt.Sprintf("%s@%s", username, w.callbackHostname.Hostname()),
 	}
+}
+
+// addImageMetaData add images an image to the LNURL metadata
+func addImageToMetaData(tb *tb.Bot, metadata *lnurl.Metadata, username string, user *tb.User) {
+	metadata.Image.Ext = "jpeg"
+
+	// if the username is anonymous, add the bot's picture
+	if isAnonUsername(username) {
+		metadata.Image.Bytes = telegram.BotProfilePicture
+		return
+	}
+
+	// if the user has a profile picture, add it
+	picture, err := telegram.DownloadProfilePicture(tb, user)
+	if err != nil {
+		log.Debugf("[LNURL] Couldn't download user %s's profile picture: %v", username, err)
+		// in case the user has no image, use bot's picture
+		metadata.Image.Bytes = telegram.BotProfilePicture
+		return
+	}
+	metadata.Image.Bytes = picture
+}
+
+func isAnonUsername(username string) bool {
+	if _, err := strconv.ParseInt(username, 10, 64); err == nil {
+		return true
+	} else {
+		return strings.HasPrefix(username, "0x")
+	}
+}
+
+func findUser(database *gorm.DB, username string) (*lnbits.User, *gorm.DB) {
+	// now check for the user
+	user := &lnbits.User{}
+	// check if "username" is actually the user ID
+	tx := database
+	if _, err := strconv.ParseInt(username, 10, 64); err == nil {
+		// asume it's anon_id
+		tx = database.Where("anon_id = ?", username).First(user)
+	} else if strings.HasPrefix(username, "0x") {
+		// asume it's anon_id_sha256
+		tx = database.Where("anon_id_sha256 = ?", username).First(user)
+	} else if strings.HasPrefix(username, "1x") {
+		// asume it's uuid
+		tx = database.Where("uuid = ?", username).First(user)
+	} else {
+		// assume it's a string @username
+		tx = database.Where("telegram_username = ? COLLATE NOCASE", username).First(user)
+	}
+	return user, tx
+}
+
+func extractSenderFromPayerdata(payer lnurl.PayerDataValues) string {
+	if payer.LightningAddress != "" {
+		return payer.LightningAddress
+	}
+	if payer.Email != "" {
+		return payer.Email
+	}
+	if payer.FreeName != "" {
+		return payer.FreeName
+	}
+	return ""
 }
