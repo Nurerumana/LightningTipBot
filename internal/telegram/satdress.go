@@ -8,28 +8,10 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/LightningTipBot/LightningTipBot/internal/lnbits"
 	"github.com/LightningTipBot/LightningTipBot/internal/satdress"
 	log "github.com/sirupsen/logrus"
 	tb "gopkg.in/lightningtipbot/telebot.v2"
 )
-
-// todo -- this needs to go somewhere database related
-func GetUserSettings(u *tb.User, bot TipBot) (*lnbits.UserSetting, error) {
-	user, err := GetUser(u, bot)
-	if err != nil {
-		return &lnbits.UserSetting{}, err
-	}
-	userSetting := &lnbits.UserSetting{UserID: user.ID}
-	tx := bot.DB.Usersettings.First(userSetting)
-	if tx.Error != nil {
-		errmsg := fmt.Sprintf("[GetUserSettings] Couldn't fetch %s from Database: %s", GetUserStr(u), tx.Error.Error())
-		log.Warnln(errmsg)
-		user.Telegram = u
-		return userSetting, tx.Error
-	}
-	return userSetting, nil
-}
 
 // todo -- rename to something better like parse node settings or something
 func parseUserSettingInput(ctx context.Context, m *tb.Message) (satdress.LNDParams, error) {
@@ -69,27 +51,20 @@ func (bot *TipBot) nodeHandler(ctx context.Context, m *tb.Message) (context.Cont
 }
 
 func (bot *TipBot) registerNodeHandler(ctx context.Context, m *tb.Message) (context.Context, error) {
-	user := LoadUser(ctx)
-	usersettings, err := GetUserSettings(user.Telegram, *bot)
+	user, err := GetLnbitsUserWithSettings(m.Sender, *bot)
 	node_info_str := "*Host:*\n`%s`\n*Macaroon:*\n`%s`\n*Cert:*\n`%s`"
 	if err != nil {
 		log.Infof("Could not get user settings for user %s", GetUserStr(user.Telegram))
 		// return ctx, err
 	} else {
-		if usersettings.LNDParams.Host != "" {
-			node_info_str_filled := fmt.Sprintf(node_info_str, usersettings.LNDParams.Host, usersettings.LNDParams.Macaroon, usersettings.LNDParams.Cert)
+		if user.Settings.LNDParams.Host != "" {
+			node_info_str_filled := fmt.Sprintf(node_info_str, user.Settings.LNDParams.Host, user.Settings.LNDParams.Macaroon, user.Settings.LNDParams.Cert)
 			resp_str := fmt.Sprintf("ℹ️ *Your node information.*\n\n%s", node_info_str_filled)
 			bot.trySendMessage(m.Sender, resp_str)
 		}
 	}
 
 	lndparams, err := parseUserSettingInput(ctx, m)
-
-	usersettings = &lnbits.UserSetting{
-		UserID:    user.ID,
-		NodeType:  "LndRest",
-		LNDParams: &lndparams,
-	}
 
 	node_info_str_filled := fmt.Sprintf(node_info_str, lndparams.Host, lndparams.Macaroon, lndparams.Cert)
 	resp_str := fmt.Sprintf("✅ *Node added.*\n\n%s", node_info_str_filled)
