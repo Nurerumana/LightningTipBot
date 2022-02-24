@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"encoding/pem"
 	"fmt"
+	"github.com/LightningTipBot/LightningTipBot/internal/runtime"
 	"strings"
 	"time"
 
@@ -136,6 +137,7 @@ func (bot *TipBot) invHandler(ctx context.Context, m *tb.Message) (context.Conte
 }
 
 func (bot *TipBot) satdressCheckInvoiceHandler(ctx context.Context, m *tb.Message) (context.Context, error) {
+
 	user, err := GetLnbitsUserWithSettings(m.Sender, *bot)
 	if err != nil {
 		return ctx, err
@@ -147,13 +149,20 @@ func (bot *TipBot) satdressCheckInvoiceHandler(ctx context.Context, m *tb.Messag
 		return ctx, err
 	}
 	getInvoiceParams := getInvoiceParamsInterface.(satdress.CheckInvoiceParams)
-	// get invoice from user's node
-	getInvoiceParams, err = satdress.CheckInvoice(getInvoiceParams)
-	if err != nil {
-		log.Errorln(err.Error())
-		return ctx, err
-	}
-	bot.trySendMessage(m.Sender, fmt.Sprintf("PR: `%s`\n\nHash:`%s`\n\nStatus: `%s`", getInvoiceParams.PR, string(getInvoiceParams.Hash), getInvoiceParams.Status))
+	deadLineCtx, _ := context.WithDeadline(ctx, time.Now().Add(time.Second*30))
+	tickerContext, cancel := context.WithCancel(deadLineCtx)
+	runtime.NewRetryTicker(tickerContext, "test", runtime.WithRetryDuration(time.Second)).Do(func() {
+		// get invoice from user's node
+		getInvoiceParams, err = satdress.CheckInvoice(getInvoiceParams)
+		if err != nil {
+			log.Errorln(err.Error())
+			return
+		}
+		if getInvoiceParams.Status == "SETTLED" {
+			cancel()
+		}
+		bot.trySendMessage(m.Sender, fmt.Sprintf("PR: `%s`\n\nHash:`%s`\n\nStatus: `%s`", getInvoiceParams.PR, string(getInvoiceParams.Hash), getInvoiceParams.Status))
+	})
 
 	return ctx, nil
 }
