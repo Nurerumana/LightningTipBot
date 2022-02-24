@@ -174,7 +174,7 @@ func CheckInvoice(params CheckInvoiceParams) (CheckInvoiceParams, error) {
 		fmt.Printf("%s", base64.StdEncoding.EncodeToString(params.Hash))
 		p, err := base64.StdEncoding.DecodeString(string(params.Hash))
 		if err != nil {
-			// handle error
+			return CheckInvoiceParams{}, fmt.Errorf("invalid hash")
 		}
 		hexHash := hex.EncodeToString(p)
 		// req, err := http.NewRequest("GET",
