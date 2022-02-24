@@ -157,7 +157,7 @@ func CheckInvoice(params CheckInvoiceParams) (CheckInvoiceParams, error) {
 	specialTransport := &http.Transport{}
 
 	// use a cert or skip TLS verification?
-	if len(params.Backend.getCert()) > 0{
+	if len(params.Backend.getCert()) > 0 {
 		caCertPool := x509.NewCertPool()
 		ok := caCertPool.AppendCertsFromPEM([]byte(params.Backend.getCert()))
 		if !ok {
@@ -172,21 +172,17 @@ func CheckInvoice(params CheckInvoiceParams) (CheckInvoiceParams, error) {
 	switch backend := params.Backend.(type) {
 	case LNDParams:
 		fmt.Printf("%s", base64.StdEncoding.EncodeToString(params.Hash))
-		body, _ := sjson.Set("{}", "r_hash", base64.StdEncoding.EncodeToString(params.Hash))
-
 		// req, err := http.NewRequest("GET",
 		// 	backend.Host+"/v1/invoice/",
 		// 	bytes.NewBufferString(body),
 		// )
-		requestUrl, err := url.Parse(fmt.Sprintf("%s/v1/invoice/?r_hash=%s", backend.Host, base64.StdEncoding.EncodeToString(params.Hash)))
+		requestUrl, err := url.Parse(fmt.Sprintf("%s/v1/invoice/%s?r_hash=%s", backend.Host, string(params.Hash), base64.StdEncoding.EncodeToString(params.Hash)))
 		if err != nil {
 			return CheckInvoiceParams{}, err
 		}
 		requestUrl.Scheme = "https"
 		req, err := http.NewRequest("GET",
-			requestUrl.String(),
-			bytes.NewBufferString(body),
-		)
+			requestUrl.String(), nil)
 		if err != nil {
 			return CheckInvoiceParams{}, err
 		}
