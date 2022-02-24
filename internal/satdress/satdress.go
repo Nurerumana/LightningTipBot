@@ -66,7 +66,7 @@ func GetInvoice(params GetInvoiceParams) (CheckInvoiceParams, error) {
 	specialTransport := &http.Transport{}
 
 	// use a cert or skip TLS verification?
-	if params.Backend.getCert() != nil {
+	if len(params.Backend.getCert()) > 0 {
 		caCertPool := x509.NewCertPool()
 		ok := caCertPool.AppendCertsFromPEM([]byte(params.Backend.getCert()))
 		if !ok {
