@@ -127,7 +127,7 @@ func (bot *TipBot) invHandler(ctx context.Context, m *tb.Message) (context.Conte
 		log.Errorln(err.Error())
 		return ctx, err
 	}
-	bot.trySendMessage(m.Sender, fmt.Sprintf("PR: `%s`\n\nHash:`%s`\n\nStatus: `%s`", getInvoiceParams.PR, string(getInvoiceParams.Hash), getInvoiceParams.Status))
+	bot.trySendMessage(m.Sender, fmt.Sprintf("PR: `%s`\n\nHash: `%s`\n\nStatus: `%s`", getInvoiceParams.PR, string(getInvoiceParams.Hash), getInvoiceParams.Status))
 
 	// add the getInvoiceParams to cache to check it later
 	bot.Cache.Set(fmt.Sprintf("invoice:%d", user.Telegram.ID), getInvoiceParams, &store.Options{Expiration: 24 * time.Hour})
@@ -153,7 +153,7 @@ func (bot *TipBot) satdressCheckInvoiceHandler(ctx context.Context, m *tb.Messag
 		log.Errorln(err.Error())
 		return ctx, err
 	}
-	bot.trySendMessage(m.Sender, fmt.Sprintf("PR: `%s`\n\nHash:`%s`\n\nStatus: `%s`", getInvoiceParams.PR, string(getInvoiceParams.Hash), getInvoiceParams.Status))
+	bot.trySendMessage(m.Sender, fmt.Sprintf("PR: `%s`\n\nHash: `%s`\n\nStatus: `%s`", getInvoiceParams.PR, string(getInvoiceParams.Hash), getInvoiceParams.Status))
 
 	return ctx, nil
 }

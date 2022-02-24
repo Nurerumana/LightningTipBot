@@ -21,7 +21,7 @@ import (
 
 // from github.com/fiatjaf/makeinvoice
 
-var TorProxyURL = internal.Configuration.Bot.HttpProxy
+var HttpProxyURL = internal.Configuration.Bot.HttpProxy
 
 var Client = &http.Client{
 	Timeout: 10 * time.Second,
@@ -35,11 +35,13 @@ type LNDParams struct {
 }
 
 func (l LNDParams) getCert() []byte { return l.Cert }
+func (l LNDParams) isLocal() bool   { return strings.HasPrefix(l.Host, "https://127.0.0.1") }
 func (l LNDParams) isTor() bool     { return strings.Index(l.Host, ".onion") != -1 }
 
 type BackendParams interface {
 	getCert() []byte
 	isTor() bool
+	isLocal() bool
 }
 
 type GetInvoiceParams struct {
@@ -77,13 +79,11 @@ func GetInvoice(params GetInvoiceParams) (CheckInvoiceParams, error) {
 		specialTransport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 	}
 
-	// todo -- commenting out proxy for dev
-	// info: always use http proxy
-	// use a tor proxy?
-	// if params.Backend.isTor() {
-	// torURL, _ := url.Parse(TorProxyURL)
-	// specialTransport.Proxy = http.ProxyURL(torURL)
-	// }
+	// use a proxy?
+	if !params.Backend.isLocal() {
+		proxyURL, _ := url.Parse(HttpProxyURL)
+		specialTransport.Proxy = http.ProxyURL(proxyURL)
+	}
 
 	Client.Transport = specialTransport
 
@@ -142,7 +142,7 @@ func GetInvoice(params GetInvoiceParams) (CheckInvoiceParams, error) {
 			Backend: params.Backend,
 			PR:      gjson.ParseBytes(b).Get("payment_request").String(),
 			Hash:    []byte(gjson.ParseBytes(b).Get("r_hash").String()),
-			Status:  "PENDING",
+			Status:  "OPEN",
 		}
 		return checkInvoiceParams, nil
 	}
@@ -167,6 +167,13 @@ func CheckInvoice(params CheckInvoiceParams) (CheckInvoiceParams, error) {
 	} else {
 		specialTransport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 	}
+
+	// use a proxy?
+	if !params.Backend.isLocal() {
+		proxyURL, _ := url.Parse(HttpProxyURL)
+		specialTransport.Proxy = http.ProxyURL(proxyURL)
+	}
+
 	Client.Transport = specialTransport
 
 	switch backend := params.Backend.(type) {
@@ -177,10 +184,6 @@ func CheckInvoice(params CheckInvoiceParams) (CheckInvoiceParams, error) {
 			return CheckInvoiceParams{}, fmt.Errorf("invalid hash")
 		}
 		hexHash := hex.EncodeToString(p)
-		// req, err := http.NewRequest("GET",
-		// 	backend.Host+"/v1/invoice/",
-		// 	bytes.NewBufferString(body),
-		// )
 		requestUrl, err := url.Parse(fmt.Sprintf("%s/v1/invoice/%s?r_hash=%s", backend.Host, hexHash, base64.StdEncoding.EncodeToString(params.Hash)))
 		if err != nil {
 			return CheckInvoiceParams{}, err
@@ -215,8 +218,9 @@ func CheckInvoice(params CheckInvoiceParams) (CheckInvoiceParams, error) {
 		if err != nil {
 			return CheckInvoiceParams{}, err
 		}
-		// bot.Cache.Set(shopView.ID, shopView, &store.Options{Expiration: 24 * time.Hour})
-		params.Status = gjson.ParseBytes(b).Get("status").String()
+		params.Status = gjson.ParseBytes(b).Get("state").String()
+		// params.Status = gjson.ParseBytes(b).Get("htlcs").Array()[0].Get("state").Str
+		// params.Status = gjson.ParseBytes(b).String()
 		return params, nil
 	}
 	return CheckInvoiceParams{}, errors.New("missing backend params")
