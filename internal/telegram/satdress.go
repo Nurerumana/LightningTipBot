@@ -30,10 +30,12 @@ func parseUserSettingInput(ctx context.Context, m *tb.Message) (satdress.LNDPara
 	if len(hostsplit) == 0 {
 		return params, fmt.Errorf("Host wrong format")
 	}
+	pem := parseCertificateToPem(cert)
 	return satdress.LNDParams{
-		Cert:     parseCertificateToPem(cert),
-		Host:     host,
-		Macaroon: macaroon,
+		Cert:       pem,
+		Host:       host,
+		Macaroon:   macaroon,
+		CertString: string(pem),
 	}, nil
 }
 
