@@ -148,9 +148,8 @@ func (bot *TipBot) satdressCheckInvoiceHandler(ctx context.Context, m *tb.Messag
 		return ctx, err
 	}
 	getInvoiceParams := getInvoiceParamsInterface.(satdress.CheckInvoiceParams)
-	deadLineCtx, _ := context.WithDeadline(ctx, time.Now().Add(time.Second*30))
-	tickerContext, cancel := context.WithCancel(deadLineCtx)
-	runtime.NewRetryTicker(tickerContext, "test", runtime.WithRetryDuration(time.Second)).Do(func() {
+	deadLineCtx, cancel := context.WithDeadline(ctx, time.Now().Add(time.Second*30))
+	runtime.NewRetryTicker(deadLineCtx, "test", runtime.WithRetryDuration(time.Second)).Do(func() {
 		// get invoice from user's node
 		getInvoiceParams, err = satdress.CheckInvoice(getInvoiceParams)
 		if err != nil {
