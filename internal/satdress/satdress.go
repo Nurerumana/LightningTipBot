@@ -172,11 +172,16 @@ func CheckInvoice(params CheckInvoiceParams) (CheckInvoiceParams, error) {
 	switch backend := params.Backend.(type) {
 	case LNDParams:
 		fmt.Printf("%s", base64.StdEncoding.EncodeToString(params.Hash))
+		p, err := base64.StdEncoding.DecodeString(string(params.Hash))
+		if err != nil {
+			// handle error
+		}
+		hexHash := hex.EncodeToString(p)
 		// req, err := http.NewRequest("GET",
 		// 	backend.Host+"/v1/invoice/",
 		// 	bytes.NewBufferString(body),
 		// )
-		requestUrl, err := url.Parse(fmt.Sprintf("%s/v1/invoice/%s?r_hash=%s", backend.Host, string(params.Hash), base64.StdEncoding.EncodeToString(params.Hash)))
+		requestUrl, err := url.Parse(fmt.Sprintf("%s/v1/invoice/%s?r_hash=%s", backend.Host, hexHash, base64.StdEncoding.EncodeToString(params.Hash)))
 		if err != nil {
 			return CheckInvoiceParams{}, err
 		}
