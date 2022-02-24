@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -177,14 +178,18 @@ func CheckInvoice(params CheckInvoiceParams) (CheckInvoiceParams, error) {
 		// 	backend.Host+"/v1/invoice/",
 		// 	bytes.NewBufferString(body),
 		// )
+		requestUrl, err := url.Parse(fmt.Sprintf("%s/v1/invoice/?r_hash=%s", backend.Host, base64.StdEncoding.EncodeToString(params.Hash)))
+		if err != nil {
+			return CheckInvoiceParams{}, err
+		}
+		requestUrl.Scheme = "https"
 		req, err := http.NewRequest("GET",
-			backend.Host+"/v1/invoice/",
+			requestUrl.String(),
 			bytes.NewBufferString(body),
 		)
 		if err != nil {
 			return CheckInvoiceParams{}, err
 		}
-
 		// macaroon must be hex, so if it is on base64 we adjust that
 		if b, err := base64.StdEncoding.DecodeString(backend.Macaroon); err == nil {
 			backend.Macaroon = hex.EncodeToString(b)
