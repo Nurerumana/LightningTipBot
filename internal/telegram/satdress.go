@@ -37,9 +37,28 @@ func parseUserSettingInput(ctx context.Context, m *tb.Message) (satdress.LNDPara
 	}, nil
 }
 
+func (bot *TipBot) getNodeHandler(ctx context.Context, m *tb.Message) (context.Context, error) {
+	user, err := GetLnbitsUserWithSettings(m.Sender, *bot)
+	if err != nil {
+		log.Infof("Could not get user settings for user %s", GetUserStr(user.Telegram))
+		return ctx, err
+	}
+	node_info_str := "*Host:*\n`%s`\n*Macaroon:*\n`%s`\n*Cert:*\n`%s`"
+	if user.Settings != nil {
+		node_info_str_filled := fmt.Sprintf(node_info_str, user.Settings.LNDParams.Host, user.Settings.LNDParams.Macaroon, user.Settings.LNDParams.Cert)
+		resp_str := fmt.Sprintf("ℹ️ *Your node information.*\n\n%s", node_info_str_filled)
+		bot.trySendMessage(m.Sender, resp_str)
+	} else {
+		bot.trySendMessage(m.Sender, "You did not register a node yet.")
+	}
+	return ctx, nil
+}
+
 func (bot *TipBot) nodeHandler(ctx context.Context, m *tb.Message) (context.Context, error) {
 	splits := strings.Split(m.Text, " ")
-	if len(splits) > 1 {
+	if len(splits) == 1 {
+		return bot.getNodeHandler(ctx, m)
+	} else if len(splits) > 1 {
 		if splits[1] == "invoice" {
 			return bot.invHandler(ctx, m)
 		}
@@ -52,20 +71,19 @@ func (bot *TipBot) nodeHandler(ctx context.Context, m *tb.Message) (context.Cont
 
 func (bot *TipBot) registerNodeHandler(ctx context.Context, m *tb.Message) (context.Context, error) {
 	user, err := GetLnbitsUserWithSettings(m.Sender, *bot)
-	node_info_str := "*Host:*\n`%s`\n*Macaroon:*\n`%s`\n*Cert:*\n`%s`"
 	if err != nil {
-		log.Infof("Could not get user settings for user %s", GetUserStr(user.Telegram))
-		// return ctx, err
-	} else {
-		if user.Settings.LNDParams.Host != "" {
-			node_info_str_filled := fmt.Sprintf(node_info_str, user.Settings.LNDParams.Host, user.Settings.LNDParams.Macaroon, user.Settings.LNDParams.Cert)
-			resp_str := fmt.Sprintf("ℹ️ *Your node information.*\n\n%s", node_info_str_filled)
-			bot.trySendMessage(m.Sender, resp_str)
-		}
+		return ctx, err
 	}
 
 	lndparams, err := parseUserSettingInput(ctx, m)
+	if err != nil {
+		return ctx, err
+	}
+	user.Settings.LNDParams = &lndparams
+	user.Settings.NodeType = "lnd"
+	err = UpdateUserRecord(user, *bot)
 
+	node_info_str := "*Host:*\n`%s`\n*Macaroon:*\n`%s`\n*Cert:*\n`%s`"
 	node_info_str_filled := fmt.Sprintf(node_info_str, lndparams.Host, lndparams.Macaroon, lndparams.Cert)
 	resp_str := fmt.Sprintf("✅ *Node added.*\n\n%s", node_info_str_filled)
 	bot.trySendMessage(m.Sender, resp_str)

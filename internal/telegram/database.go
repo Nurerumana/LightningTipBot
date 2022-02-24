@@ -167,16 +167,18 @@ func GetLnbitsUserWithSettings(u *tb.User, bot TipBot) (*lnbits.User, error) {
 	user := &lnbits.User{Name: strconv.FormatInt(u.ID, 10)}
 	tx := bot.DB.Users.Preload("Settings").First(user)
 	if tx.Error != nil {
-		errmsg := fmt.Sprintf("[GetUser] Couldn't fetch %s from Database: %s", GetUserStr(u), tx.Error.Error())
+		errmsg := fmt.Sprintf("[GetLnbitsUserWithSettings] Couldn't fetch %s from Database: %s", GetUserStr(u), tx.Error.Error())
 		log.Warnln(errmsg)
 		user.Telegram = u
 		return user, tx.Error
 	}
-	// todo -- unblock this !
+	if user.Settings == nil {
+		user.Settings = &lnbits.Settings{ID: user.ID}
+	}
 	return user, nil
 }
 
-// GetUser from Telegram user. Update the user if user information changed.
+// GetUser from Telegram user. Update the user if user information changed.``
 func GetUser(u *tb.User, bot TipBot) (*lnbits.User, error) {
 	var user *lnbits.User
 	var err error
