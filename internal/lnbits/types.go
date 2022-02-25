@@ -34,7 +34,7 @@ type User struct {
 	AnonIDSha256 string       `json:"anon_id_sha256"`
 	UUID         string       `json:"uuid"`
 	Banned       bool         `json:"banned"`
-	Settings     *Settings    `json:"settings" gorm:"foreignKey:ID"`
+	Settings     *Settings    `json:"settings" gorm:"foreignKey:id"`
 }
 
 type Settings struct {

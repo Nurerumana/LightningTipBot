@@ -1,6 +1,7 @@
 package telegram
 
 import (
+	"bytes"
 	"context"
 	"encoding/base64"
 	"encoding/hex"
@@ -9,9 +10,13 @@ import (
 	"strings"
 	"time"
 
+	"github.com/LightningTipBot/LightningTipBot/internal/lnbits"
+	"github.com/LightningTipBot/LightningTipBot/internal/runtime"
 	"github.com/LightningTipBot/LightningTipBot/internal/satdress"
+	"github.com/LightningTipBot/LightningTipBot/internal/storage"
 	"github.com/eko/gocache/store"
 	log "github.com/sirupsen/logrus"
+	"github.com/skip2/go-qrcode"
 	tb "gopkg.in/lightningtipbot/telebot.v2"
 )
 
@@ -72,6 +77,9 @@ func (bot *TipBot) nodeHandler(ctx context.Context, m *tb.Message) (context.Cont
 		if splits[1] == "check" {
 			return bot.satdressCheckInvoiceHandler(ctx, m)
 		}
+		if splits[1] == "proxy" {
+			return bot.satdressProxyHandler(ctx, m)
+		}
 	}
 	return ctx, nil
 }
@@ -102,14 +110,17 @@ func (bot *TipBot) invHandler(ctx context.Context, m *tb.Message) (context.Conte
 	if err != nil {
 		return ctx, err
 	}
+	if user.Settings == nil || user.Settings.LNDParams == nil {
+		bot.trySendMessage(m.Sender, "You did not register a node yet.")
+		return ctx, fmt.Errorf("node of user %s not registered", GetUserStr(user.Telegram))
+	}
 
 	var amount int64
 	if amount_str, err := getArgumentFromCommand(m.Text, 2); err == nil {
 		amount, err = getAmount(amount_str)
-	} else {
-		// todo -- default amount for testing 1 sat, should actually return error
-		amount = 1
-		// return ctx, err
+		if err != nil {
+			return ctx, err
+		}
 	}
 
 	// get invoice from user's node
@@ -181,4 +192,113 @@ func parseCertificateToPem(cert string) []byte {
 		// decoding went wrong
 		return nil
 	}
+}
+
+func (bot *TipBot) satdressProxyHandler(ctx context.Context, m *tb.Message) (context.Context, error) {
+	user, err := GetLnbitsUserWithSettings(m.Sender, *bot)
+	if err != nil {
+		return ctx, err
+	}
+
+	var amount int64
+	if amount_str, err := getArgumentFromCommand(m.Text, 2); err == nil {
+		amount, err = getAmount(amount_str)
+		if err != nil {
+			return ctx, err
+		}
+	}
+
+	memo := "Proxy relay invoice"
+	invoice, err := bot.createInvoiceWithEvent(ctx, user, amount, memo, InvoiceCallbackSatdressProxy, "")
+	if err != nil {
+		errmsg := fmt.Sprintf("[/invoice] Could not create an invoice: %s", err.Error())
+		bot.trySendMessage(user.Telegram, Translate(ctx, "errorTryLaterMessage"))
+		log.Errorln(errmsg)
+		return ctx, err
+	}
+
+	// create qr code
+	qr, err := qrcode.Encode(invoice.PaymentRequest, qrcode.Medium, 256)
+	if err != nil {
+		errmsg := fmt.Sprintf("[/invoice] Failed to create QR code for invoice: %s", err.Error())
+		bot.trySendMessage(user.Telegram, Translate(ctx, "errorTryLaterMessage"))
+		log.Errorln(errmsg)
+		return ctx, err
+	}
+	bot.trySendMessage(m.Sender, &tb.Photo{File: tb.File{FileReader: bytes.NewReader(qr)}, Caption: fmt.Sprintf("`%s`", invoice.PaymentRequest)})
+	return ctx, nil
+}
+
+func (bot *TipBot) satdressProxyRelayPaymentHandler(invoiceEvent *InvoiceEvent) {
+	user := invoiceEvent.User
+	if user.Settings == nil || user.Settings.LNDParams == nil {
+		bot.trySendMessage(user.Telegram, "You did not register a node yet.")
+		log.Errorf("node of user %s not registered", GetUserStr(user.Telegram))
+		return
+	}
+
+	bot.notifyInvoiceReceivedEvent(invoiceEvent)
+
+	// now relay the payment to the user's node
+	var amount int64 = invoiceEvent.Amount
+
+	// get invoice from user's node
+	getInvoiceParams, err := satdress.GetInvoice(
+		satdress.GetInvoiceParams{
+			Backend: satdress.LNDParams{
+				Cert:     []byte(user.Settings.LNDParams.CertString),
+				Host:     user.Settings.LNDParams.Host,
+				Macaroon: user.Settings.LNDParams.Macaroon,
+			},
+			Msatoshi: amount * 1000,
+		},
+	)
+	if err != nil {
+		log.Errorln(err.Error())
+		return
+	}
+
+	bot.trySendMessage(user.Telegram, fmt.Sprintf("PR: `%s`\n\nHash: `%s`\n\nStatus: `%s`", getInvoiceParams.PR, string(getInvoiceParams.Hash), getInvoiceParams.Status))
+
+	// pay invoice
+	invoice, err := user.Wallet.Pay(lnbits.PaymentParams{Out: true, Bolt11: getInvoiceParams.PR}, bot.Client)
+	if err != nil {
+		errmsg := fmt.Sprintf("[/pay] Could not pay invoice of %s: %s", GetUserStr(user.Telegram), err)
+		// err = fmt.Errorf(i18n.Translate(payData.LanguageCode, "invoiceUndefinedErrorMessage"))
+		// bot.tryEditMessage(c.Message, fmt.Sprintf(i18n.Translate(payData.LanguageCode, "invoicePaymentFailedMessage"), err.Error()), &tb.ReplyMarkup{})
+		// verbose error message, turned off for now
+		// if len(err.Error()) == 0 {
+		// 	err = fmt.Errorf(i18n.Translate(payData.LanguageCode, "invoiceUndefinedErrorMessage"))
+		// }
+		// bot.tryEditMessage(c.Message, fmt.Sprintf(i18n.Translate(payData.LanguageCode, "invoicePaymentFailedMessage"), str.MarkdownEscape(err.Error())), &tb.ReplyMarkup{})
+		log.Errorln(errmsg)
+		return
+	}
+
+	// object that holds all information about the send payment
+	id := fmt.Sprintf("proxypay:%d:%d:%s", user.Telegram.ID, amount, RandStringRunes(8))
+
+	payData := &PayData{
+		Base:    storage.New(storage.ID(id)),
+		From:    user,
+		Invoice: invoice.PaymentRequest,
+		Hash:    invoice.PaymentHash,
+		Amount:  int64(amount),
+	}
+	// add result to persistent struct
+	runtime.IgnoreError(payData.Set(payData, bot.Bunt))
+
+	// add the getInvoiceParams to cache to check it later
+	bot.Cache.Set(fmt.Sprintf("invoice:%d", user.Telegram.ID), getInvoiceParams, &store.Options{Expiration: 24 * time.Hour})
+
+	time.Sleep(time.Second)
+
+	getInvoiceParams, err = satdress.CheckInvoice(getInvoiceParams)
+	if err != nil {
+		log.Errorln(err.Error())
+		return
+	}
+	bot.trySendMessage(user.Telegram, fmt.Sprintf("PR: `%s`\n\nHash: `%s`\n\nStatus: `%s`", getInvoiceParams.PR, string(getInvoiceParams.Hash), getInvoiceParams.Status))
+
+	return
 }

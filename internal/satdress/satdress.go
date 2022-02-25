@@ -80,7 +80,7 @@ func GetInvoice(params GetInvoiceParams) (CheckInvoiceParams, error) {
 	}
 
 	// use a proxy?
-	if !params.Backend.isLocal() {
+	if !params.Backend.isLocal() && len(HttpProxyURL) > 0 {
 		proxyURL, _ := url.Parse(HttpProxyURL)
 		specialTransport.Proxy = http.ProxyURL(proxyURL)
 	}
@@ -169,7 +169,7 @@ func CheckInvoice(params CheckInvoiceParams) (CheckInvoiceParams, error) {
 	}
 
 	// use a proxy?
-	if !params.Backend.isLocal() {
+	if !params.Backend.isLocal() && len(HttpProxyURL) > 0 {
 		proxyURL, _ := url.Parse(HttpProxyURL)
 		specialTransport.Proxy = http.ProxyURL(proxyURL)
 	}
