@@ -58,13 +58,13 @@ func (bot *TipBot) editSingleButton(ctx context.Context, m *tb.Message, message 
 
 // lnurlWithdrawHandler is invoked when the first lnurl response was a lnurl-withdraw response
 // at this point, the user hans't necessarily entered an amount yet
-func (bot *TipBot) lnurlWithdrawHandler(ctx context.Context, m *tb.Message, withdrawParams LnurlWithdrawState) {
+func (bot *TipBot) lnurlWithdrawHandler(ctx context.Context, m *tb.Message, withdrawParams LnurlWithdrawState) (context.Context, error) {
 	user := LoadUser(ctx)
 	if user.Wallet == nil {
-		return
+		return ctx, errors.Create(errors.UserNoWalletError)
 	}
 	// object that holds all information about the send payment
-	id := fmt.Sprintf("lnurlw-%d-%s", m.Sender.ID, RandStringRunes(5))
+	id := fmt.Sprintf("lnurlw:%d:%s", m.Sender.ID, RandStringRunes(5))
 	LnurlWithdrawState := LnurlWithdrawState{
 		Base:                  storage.New(storage.ID(id)),
 		From:                  user,
@@ -84,7 +84,7 @@ func (bot *TipBot) lnurlWithdrawHandler(ctx context.Context, m *tb.Message, with
 		log.Warnf("[lnurlWithdrawHandler] Error: %s", err.Error())
 		bot.trySendMessage(m.Sender, fmt.Sprintf(Translate(ctx, "lnurlInvalidAmountRangeMessage"), LnurlWithdrawState.LNURLWithdrawResponse.MinWithdrawable/1000, LnurlWithdrawState.LNURLWithdrawResponse.MaxWithdrawable/1000))
 		ResetUserState(user, bot)
-		return
+		return ctx, err
 	}
 
 	// if no amount is entered, and if only one amount is possible, we use it
@@ -103,7 +103,7 @@ func (bot *TipBot) lnurlWithdrawHandler(ctx context.Context, m *tb.Message, with
 	if amount_err != nil || amount < 1 {
 		// // no amount was entered, set user state and ask for amount
 		bot.askForAmount(ctx, id, "LnurlWithdrawState", LnurlWithdrawState.LNURLWithdrawResponse.MinWithdrawable, LnurlWithdrawState.LNURLWithdrawResponse.MaxWithdrawable, m.Text)
-		return
+		return ctx, nil
 	}
 
 	// We need to save the pay state in the user state so we can load the payment in the next handler
@@ -111,12 +111,11 @@ func (bot *TipBot) lnurlWithdrawHandler(ctx context.Context, m *tb.Message, with
 	if err != nil {
 		log.Errorf("[lnurlWithdrawHandler] Error: %s", err.Error())
 		// bot.trySendMessage(m.Sender, err.Error())
-		return
+		return ctx, err
 	}
 	SetUserState(user, bot, lnbits.UserHasEnteredAmount, string(paramsJson))
 	// directly go to confirm
-	bot.lnurlWithdrawHandlerWithdraw(ctx, m)
-	return
+	return bot.lnurlWithdrawHandlerWithdraw(ctx, m)
 }
 
 // lnurlWithdrawHandlerWithdraw is invoked when the user has delivered an amount and is ready to pay

@@ -34,13 +34,13 @@ type LnurlPayState struct {
 
 // lnurlPayHandler1 is invoked when the first lnurl response was a lnurlpay response
 // at this point, the user hans't necessarily entered an amount yet
-func (bot *TipBot) lnurlPayHandler(ctx context.Context, m *tb.Message, payParams LnurlPayState) {
+func (bot *TipBot) lnurlPayHandler(ctx context.Context, m *tb.Message, payParams LnurlPayState) (context.Context, error) {
 	user := LoadUser(ctx)
 	if user.Wallet == nil {
-		return
+		return ctx, errors.Create(errors.UserNoWalletError)
 	}
 	// object that holds all information about the send payment
-	id := fmt.Sprintf("lnurlp-%d-%s", m.Sender.ID, RandStringRunes(5))
+	id := fmt.Sprintf("lnurlp:%d:%s", m.Sender.ID, RandStringRunes(5))
 	lnurlPayState := &LnurlPayState{
 		Base:           storage.New(storage.ID(id)),
 		From:           user,
@@ -77,7 +77,7 @@ func (bot *TipBot) lnurlPayHandler(ctx context.Context, m *tb.Message, payParams
 		log.Warnf("[lnurlPayHandler] Error: %s", err.Error())
 		bot.trySendMessage(m.Sender, fmt.Sprintf(Translate(ctx, "lnurlInvalidAmountRangeMessage"), lnurlPayState.LNURLPayParams.MinSendable/1000, lnurlPayState.LNURLPayParams.MaxSendable/1000))
 		ResetUserState(user, bot)
-		return
+		return ctx, err
 	}
 	// set also amount in the state of the user
 	lnurlPayState.Amount = amount * 1000 // save as mSat
@@ -87,12 +87,11 @@ func (bot *TipBot) lnurlPayHandler(ctx context.Context, m *tb.Message, payParams
 
 	// now we actualy check whether the amount was in the command and if not, ask for it
 	if lnurlPayState.LNURLPayParams.MinSendable == lnurlPayState.LNURLPayParams.MaxSendable {
-		amount = lnurlPayState.LNURLPayParams.MaxSendable / 1000
-		lnurlPayState.Amount = amount * 1000 // save as mSat
+		lnurlPayState.Amount = lnurlPayState.LNURLPayParams.MaxSendable // save as mSat
 	} else if amount_err != nil || amount < 1 {
 		// // no amount was entered, set user state and ask for amount
 		bot.askForAmount(ctx, id, "LnurlPayState", lnurlPayState.LNURLPayParams.MinSendable, lnurlPayState.LNURLPayParams.MaxSendable, m.Text)
-		return
+		return ctx, nil
 	}
 
 	// We need to save the pay state in the user state so we can load the payment in the next handler
@@ -100,12 +99,11 @@ func (bot *TipBot) lnurlPayHandler(ctx context.Context, m *tb.Message, payParams
 	if err != nil {
 		log.Errorf("[lnurlPayHandler] Error: %s", err.Error())
 		// bot.trySendMessage(m.Sender, err.Error())
-		return
+		return ctx, err
 	}
 	SetUserState(user, bot, lnbits.UserHasEnteredAmount, string(paramsJson))
 	// directly go to confirm
-	bot.lnurlPayHandlerSend(ctx, m)
-	return
+	return bot.lnurlPayHandlerSend(ctx, m)
 }
 
 // lnurlPayHandlerSend is invoked when the user has delivered an amount and is ready to pay

@@ -188,7 +188,7 @@ func (bot *TipBot) enterAmountHandler(ctx context.Context, m *tb.Message) (conte
 		if err != nil {
 			return ctx, err
 		}
-		LnurlWithdrawState := sn.(*LnurlWithdrawState)
+		LnurlWithdrawState := sn.(LnurlWithdrawState)
 		LnurlWithdrawState.Amount = amount * 1000 // mSat
 		// add result to persistent struct
 		runtime.IgnoreError(LnurlWithdrawState.Set(LnurlWithdrawState, bot.Bunt))

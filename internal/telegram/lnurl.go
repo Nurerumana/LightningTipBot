@@ -107,13 +107,13 @@ func (bot *TipBot) lnurlHandler(ctx context.Context, m *tb.Message) (context.Con
 			bot.trySendMessage(m.Sender, fmt.Sprintf("`%s`", payParams.LNURLPayParams.Metadata.Description))
 		}
 		// ask whether to make payment
-		bot.lnurlPayHandler(ctx, m, *payParams)
+		return bot.lnurlPayHandler(ctx, m, *payParams)
 
 	case lnurl.LNURLWithdrawResponse:
 		withdrawParams := LnurlWithdrawState{LNURLWithdrawResponse: params.(lnurl.LNURLWithdrawResponse)}
 		log.Infof("[LNURL-w] %s", withdrawParams.LNURLWithdrawResponse.Callback)
 		bot.tryDeleteMessage(statusMsg)
-		bot.lnurlWithdrawHandler(ctx, m, withdrawParams)
+		return bot.lnurlWithdrawHandler(ctx, m, withdrawParams)
 	default:
 		if err == nil {
 			err = fmt.Errorf("invalid LNURL type")
