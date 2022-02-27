@@ -289,7 +289,7 @@ func (bot *TipBot) satdressProxyRelayPaymentHandler(invoiceEvent *InvoiceEvent) 
 		From:    user,
 		Invoice: invoice.PaymentRequest,
 		Hash:    invoice.PaymentHash,
-		Amount:  int64(amount),
+		Amount:  amount,
 	}
 	// add result to persistent struct
 	runtime.IgnoreError(payData.Set(payData, bot.Bunt))
