@@ -159,7 +159,7 @@ func CheckInvoice(params CheckInvoiceParams) (CheckInvoiceParams, error) {
 	// use a cert or skip TLS verification?
 	if len(params.Backend.getCert()) > 0 {
 		caCertPool := x509.NewCertPool()
-		ok := caCertPool.AppendCertsFromPEM([]byte(params.Backend.getCert()))
+		ok := caCertPool.AppendCertsFromPEM(params.Backend.getCert())
 		if !ok {
 			return CheckInvoiceParams{}, fmt.Errorf("invalid root certificate")
 		}
