@@ -219,12 +219,7 @@ func CheckInvoice(params CheckInvoiceParams) (CheckInvoiceParams, error) {
 			return CheckInvoiceParams{}, err
 		}
 		// bot.Cache.Set(shopView.ID, shopView, &store.Options{Expiration: 24 * time.Hour})
-		state := gjson.ParseBytes(b).Get("htlcs.state").Array()
-		if len(state) > 0 {
-			params.Status = state[0].Str
-		} else {
-			params.Status = "PENDING"
-		}
+		params.Status = gjson.ParseBytes(b).Get("state").String()
 		return params, nil
 	}
 	return CheckInvoiceParams{}, errors.New("missing backend params")
