@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/LightningTipBot/LightningTipBot/internal/lnbits"
-	"github.com/LightningTipBot/LightningTipBot/internal/runtime"
 	"github.com/LightningTipBot/LightningTipBot/internal/satdress"
 	"github.com/LightningTipBot/LightningTipBot/internal/storage"
 	"github.com/eko/gocache/store"
