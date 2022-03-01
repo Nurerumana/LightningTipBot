@@ -7,9 +7,10 @@ import (
 	"encoding/hex"
 	"encoding/pem"
 	"fmt"
-	"github.com/LightningTipBot/LightningTipBot/internal/runtime"
 	"strings"
 	"time"
+
+	"github.com/LightningTipBot/LightningTipBot/internal/runtime"
 
 	"github.com/LightningTipBot/LightningTipBot/internal/lnbits"
 	"github.com/LightningTipBot/LightningTipBot/internal/satdress"
@@ -159,7 +160,7 @@ func (bot *TipBot) satdressCheckInvoiceHandler(ctx context.Context, m *tb.Messag
 	}
 	getInvoiceParams := getInvoiceParamsInterface.(satdress.CheckInvoiceParams)
 	deadLineCtx, cancel := context.WithDeadline(ctx, time.Now().Add(time.Second*30))
-	runtime.NewRetryTicker(deadLineCtx, "test", runtime.WithRetryDuration(time.Second)).Do(func() {
+	runtime.NewRetryTicker(deadLineCtx, "test", runtime.WithRetryDuration(3*time.Second)).Do(func() {
 		// get invoice from user's node
 		getInvoiceParams, err = satdress.CheckInvoice(getInvoiceParams)
 		if err != nil {
