@@ -17,7 +17,7 @@ var defaultTickerCoolDown = time.Second * 10
 type ResettableFunctionTicker struct {
 	Ticker    *time.Ticker
 	ResetChan chan struct{} // channel used to reset the ticker
-	StopChan  chan struct{} // channel used to reset the ticker
+	StopChan  chan struct{} // channel used to stop the ticker
 	duration  time.Duration
 	Started   bool
 	name      string
