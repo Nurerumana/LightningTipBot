@@ -56,8 +56,8 @@ func (bot *TipBot) getNodeHandler(ctx intercept.Context) (intercept.Context, err
 		return ctx, err
 	}
 	node_info_str := "*Host:*\n`%s`\n*Macaroon:*\n`%s`\n*Cert:*\n`%s`"
-	if user.Settings != nil {
-		node_info_str_filled := fmt.Sprintf(node_info_str, user.Settings.LNDParams.Host, user.Settings.LNDParams.Macaroon, user.Settings.LNDParams.Cert)
+	if user.Settings != nil && user.Settings.LNDParams != nil {
+		node_info_str_filled := fmt.Sprintf(node_info_str, user.Settings.LNDParams.Host, user.Settings.LNDParams.Macaroon, user.Settings.LNDParams.CertString)
 		resp_str := fmt.Sprintf("ℹ️ *Your node information.*\n\n%s", node_info_str_filled)
 		bot.trySendMessage(m.Sender, resp_str)
 	} else {
