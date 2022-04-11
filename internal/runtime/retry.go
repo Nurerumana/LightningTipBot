@@ -2,15 +2,14 @@ package runtime
 
 import (
 	"context"
-	cmap "github.com/orcaman/concurrent-map"
 	"time"
 )
 
-var retryMap cmap.ConcurrentMap
+// var retryMap cmap.ConcurrentMap
 
-func init() {
-	retryMap = cmap.New()
-}
+// func init() {
+// 	retryMap = cmap.New()
+// }
 
 // ResettableFunctionTicker will reset the user state as soon as tick is delivered.
 type FunctionRetry struct {
@@ -42,7 +41,7 @@ func NewRetryTicker(ctx context.Context, name string, option ...FunctionRetryOpt
 	return t
 }
 
-func (t *FunctionRetry) Do(f func()) {
+func (t *FunctionRetry) Do(f func(), cancel_f func(), deadline_f func()) {
 	tickerMap.Set(t.name, t)
 	go func() {
 		for {
@@ -51,6 +50,12 @@ func (t *FunctionRetry) Do(f func()) {
 				// ticker delivered signal. do function f
 				f()
 			case <-t.ctx.Done():
+				if t.ctx.Err() == context.DeadlineExceeded {
+					deadline_f()
+				}
+				if t.ctx.Err() == context.Canceled {
+					cancel_f()
+				}
 				return
 			}
 		}

@@ -38,7 +38,11 @@ type User struct {
 }
 
 type Settings struct {
-	ID        string              `json:"id" gorm:"primarykey"`
+	ID   string       `json:"id" gorm:"primarykey"`
+	Node NodeSettings `gorm:"embedded;embeddedPrefix:node_"`
+}
+
+type NodeSettings struct {
 	NodeType  string              `json:"nodetype"`
 	LNDParams *satdress.LNDParams `gorm:"embedded;embeddedPrefix:lndparams_"`
 }
