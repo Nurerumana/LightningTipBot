@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/LightningTipBot/LightningTipBot/internal"
+	log "github.com/sirupsen/logrus"
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
 )
@@ -178,7 +179,7 @@ func CheckInvoice(params CheckInvoiceParams) (CheckInvoiceParams, error) {
 
 	switch backend := params.Backend.(type) {
 	case LNDParams:
-		fmt.Printf("%s", base64.StdEncoding.EncodeToString(params.Hash))
+		log.Debugf("Checking invoice %s at %s", base64.StdEncoding.EncodeToString(params.Hash), backend.Host)
 		p, err := base64.StdEncoding.DecodeString(string(params.Hash))
 		if err != nil {
 			return CheckInvoiceParams{}, fmt.Errorf("invalid hash")
