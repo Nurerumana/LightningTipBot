@@ -271,6 +271,11 @@ func (bot *TipBot) satdressProxyHandler(ctx intercept.Context) (intercept.Contex
 	if err != nil {
 		return ctx, err
 	}
+	if user.Settings == nil || user.Settings.Node.LNDParams == nil {
+		bot.trySendMessage(user.Telegram, "You did not register a node yet.")
+		log.Errorf("node of user %s not registered", GetUserStr(user.Telegram))
+		return ctx, fmt.Errorf("no node settings.")
+	}
 
 	var amount int64
 	if amount_str, err := getArgumentFromCommand(m.Text, 2); err == nil {
