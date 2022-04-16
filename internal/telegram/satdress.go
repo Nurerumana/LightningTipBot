@@ -23,12 +23,19 @@ import (
 )
 
 var (
-	checkingInvoiceMessage    = "⏳ Checking invoice on your node..."
-	invoiceNotSettledMessage  = "❌ Invoice has not settled yet."
-	checkInvoiceButtonMessage = "🔄 Check invoice"
-	invoiceSettledMessage     = "✅ *Invoice settled.*"
-	satdressCheckInvoicenMenu = &tb.ReplyMarkup{ResizeKeyboard: true}
-	btnSatdressCheckInvoice   = satdressCheckInvoicenMenu.Data(checkInvoiceButtonMessage, "satdress_check_invoice")
+	checkingInvoiceMessage         = "⏳ Checking invoice on your node..."
+	invoiceNotSettledMessage       = "❌ Invoice has not settled yet."
+	checkInvoiceButtonMessage      = "🔄 Check invoice"
+	routingInvoiceMessage          = "🔄 Getting invoice from your node..."
+	checkingNodeMessage            = "🔄 Checking your node..."
+	errorCouldNotAddNodeMessage    = "❌ Could not add node. Please check your node details."
+	gettingInvoiceOnlyErrorMessage = "❌ Error getting invoice from your node."
+	gettingInvoiceErrorMessage     = "❌ Error getting invoice from your node. Your funds are still available."
+	payingInvoiceErrorMessage      = "❌ Could not route payment. Your funds are still available."
+	invoiceRoutedMessage           = "✅ *Payment routed to your node.*"
+	invoiceSettledMessage          = "✅ *Invoice settled.*"
+	satdressCheckInvoicenMenu      = &tb.ReplyMarkup{ResizeKeyboard: true}
+	btnSatdressCheckInvoice        = satdressCheckInvoicenMenu.Data(checkInvoiceButtonMessage, "satdress_check_invoice")
 )
 
 // todo -- rename to something better like parse node settings or something
@@ -37,7 +44,7 @@ func parseUserSettingInput(ctx intercept.Context, m *tb.Message) (satdress.LNDPa
 	params := satdress.LNDParams{}
 	splits := strings.Split(m.Text, " ")
 	splitlen := len(splits)
-	if splitlen < 4 || splitlen > 5 {
+	if splitlen < 5 || splitlen > 6 {
 		return params, fmt.Errorf("wrong format! Use <Host> <Macaroon> <Cert>")
 	}
 	host := splits[2]
@@ -103,22 +110,40 @@ func (bot *TipBot) registerNodeHandler(ctx intercept.Context) (intercept.Context
 	if err != nil {
 		return ctx, err
 	}
+	check_message := bot.trySendMessageEditable(user.Telegram, checkingNodeMessage)
+
 	lndparams, err := parseUserSettingInput(ctx, m)
 	if err != nil {
+		bot.tryEditMessage(check_message, fmt.Sprintf(Translate(ctx, "errorReasonMessage"), err.Error()))
 		return ctx, err
 	}
+
+	// get test invoice from user's node
+	getInvoiceParams, err := satdress.GetInvoice(
+		satdress.GetInvoiceParams{
+			Backend:  lndparams,
+			Msatoshi: 1000,
+		},
+	)
+	if err != nil {
+		log.Errorf("[registerNodeHandler] Could not add user %s's %s node: %s", GetUserStr(user.Telegram), getInvoiceParams.Status, err.Error())
+		bot.tryEditMessage(check_message, errorCouldNotAddNodeMessage)
+		return ctx, err
+	}
+
+	// save node in db
 	user.Settings.Node.LNDParams = &lndparams
-	user.Settings.Node.NodeType = "lnd"
+	user.Settings.Node.NodeType = "LND"
 	err = UpdateUserRecord(user, *bot)
 	if err != nil {
 		log.Errorf("[registerNodeHandler] could not update record of user %s: %v", GetUserStr(user.Telegram), err)
 		return ctx, err
 	}
 
-	node_info_str := "*Host:*\n`%s`\n*Macaroon:*\n`%s`\n*Cert:*\n`%s`"
-	node_info_str_filled := fmt.Sprintf(node_info_str, lndparams.Host, lndparams.Macaroon, lndparams.Cert)
+	node_info_str := "*Host:*\n`%s` (*Type*: `%s`)\n\n*Macaroon:*\n`%s`\n\n*Cert:*\n`%s`"
+	node_info_str_filled := fmt.Sprintf(node_info_str, lndparams.Host, user.Settings.Node.NodeType, lndparams.Macaroon, lndparams.Cert)
 	resp_str := fmt.Sprintf("✅ *Node added.*\n\n%s", node_info_str_filled)
-	bot.trySendMessage(m.Sender, resp_str)
+	bot.tryEditMessage(check_message, resp_str)
 	return ctx, nil
 }
 
@@ -141,6 +166,7 @@ func (bot *TipBot) invHandler(ctx intercept.Context) (intercept.Context, error) 
 		}
 	}
 
+	check_message := bot.trySendMessageEditable(user.Telegram, routingInvoiceMessage)
 	// get invoice from user's node
 	getInvoiceParams, err := satdress.GetInvoice(
 		satdress.GetInvoiceParams{
@@ -154,6 +180,7 @@ func (bot *TipBot) invHandler(ctx intercept.Context) (intercept.Context, error) 
 	)
 	if err != nil {
 		log.Errorln(err.Error())
+		bot.tryEditMessage(check_message, gettingInvoiceOnlyErrorMessage)
 		return ctx, err
 	}
 	// bot.trySendMessage(m.Sender, fmt.Sprintf("PR: `%s`\n\nHash: `%s`\n\nStatus: `%s`", getInvoiceParams.PR, string(getInvoiceParams.Hash), getInvoiceParams.Status))
@@ -210,15 +237,17 @@ func (bot *TipBot) satdressCheckInvoiceHandler(ctx intercept.Context) (intercept
 	// save it in the cache for another call later
 	bot.Cache.Set(fmt.Sprintf("invoice:msg:%s", getInvoiceParams.Hash), check_message, &store.Options{Expiration: 24 * time.Hour})
 
-	deadLineCtx, cancel := context.WithDeadline(ctx, time.Now().Add(time.Second*10))
+	deadLineCtx, cancel := context.WithDeadline(ctx, time.Now().Add(time.Second*30))
 	runtime.NewRetryTicker(deadLineCtx, "node_invoice_check", runtime.WithRetryDuration(5*time.Second)).Do(func() {
 		// get invoice from user's node
+		log.Debugf("[satdressCheckInvoiceHandler] Checking invoice: %s", getInvoiceParams.Hash)
 		getInvoiceParams, err = satdress.CheckInvoice(getInvoiceParams)
 		if err != nil {
 			log.Errorln(err.Error())
 			return
 		}
 		if getInvoiceParams.Status == "SETTLED" {
+			log.Debugf("[satdressCheckInvoiceHandler] Invoice settled: %s", getInvoiceParams.Hash)
 			bot.tryEditMessage(check_message, invoiceSettledMessage)
 			cancel()
 		}
@@ -228,6 +257,7 @@ func (bot *TipBot) satdressCheckInvoiceHandler(ctx intercept.Context) (intercept
 	},
 		func() {
 			// deadline
+			log.Debugf("[satdressCheckInvoiceHandler] Invoice check expired: %s", getInvoiceParams.Hash)
 			bot.tryEditMessage(check_message, invoiceNotSettledMessage,
 				&tb.ReplyMarkup{
 					InlineKeyboard: [][]tb.InlineButton{
@@ -285,7 +315,7 @@ func (bot *TipBot) satdressProxyHandler(ctx intercept.Context) (intercept.Contex
 		}
 	}
 
-	memo := "Proxy relay invoice"
+	memo := "🔀 Payment proxy in."
 	invoice, err := bot.createInvoiceWithEvent(ctx, user, amount, memo, InvoiceCallbackSatdressProxy, "")
 	if err != nil {
 		errmsg := fmt.Sprintf("[/invoice] Could not create an invoice: %s", err.Error())
@@ -320,6 +350,8 @@ func (bot *TipBot) satdressProxyRelayPaymentHandler(event Event) {
 	// now relay the payment to the user's node
 	var amount int64 = invoiceEvent.Amount
 
+	check_message := bot.trySendMessageEditable(user.Telegram, routingInvoiceMessage)
+
 	// get invoice from user's node
 	getInvoiceParams, err := satdress.GetInvoice(
 		satdress.GetInvoiceParams{
@@ -328,15 +360,17 @@ func (bot *TipBot) satdressProxyRelayPaymentHandler(event Event) {
 				Host:     user.Settings.Node.LNDParams.Host,
 				Macaroon: user.Settings.Node.LNDParams.Macaroon,
 			},
-			Msatoshi: amount * 1000,
+			Msatoshi:    amount * 1000,
+			Description: fmt.Sprintf("🔀 Payment proxy out from %s.", GetUserStr(bot.Telegram.Me)),
 		},
 	)
 	if err != nil {
 		log.Errorln(err.Error())
+		bot.tryEditMessage(check_message, gettingInvoiceErrorMessage)
 		return
 	}
 
-	bot.trySendMessage(user.Telegram, fmt.Sprintf("PR: `%s`\n\nHash: `%s`\n\nStatus: `%s`", getInvoiceParams.PR, string(getInvoiceParams.Hash), getInvoiceParams.Status))
+	// bot.trySendMessage(user.Telegram, fmt.Sprintf("PR: `%s`\n\nHash: `%s`\n\nStatus: `%s`", getInvoiceParams.PR, string(getInvoiceParams.Hash), getInvoiceParams.Status))
 
 	// pay invoice
 	invoice, err := user.Wallet.Pay(lnbits.PaymentParams{Out: true, Bolt11: getInvoiceParams.PR}, bot.Client)
@@ -350,6 +384,7 @@ func (bot *TipBot) satdressProxyRelayPaymentHandler(event Event) {
 		// }
 		// bot.tryEditMessage(c.Message, fmt.Sprintf(i18n.Translate(payData.LanguageCode, "invoicePaymentFailedMessage"), str.MarkdownEscape(err.Error())), &tb.ReplyMarkup{})
 		log.Errorln(errmsg)
+		bot.tryEditMessage(check_message, payingInvoiceErrorMessage)
 		return
 	}
 
@@ -376,7 +411,8 @@ func (bot *TipBot) satdressProxyRelayPaymentHandler(event Event) {
 		log.Errorln(err.Error())
 		return
 	}
-	bot.trySendMessage(user.Telegram, fmt.Sprintf("PR: `%s`\n\nHash: `%s`\n\nStatus: `%s`", getInvoiceParams.PR, string(getInvoiceParams.Hash), getInvoiceParams.Status))
+	bot.tryEditMessage(check_message, invoiceRoutedMessage)
+	// bot.trySendMessage(user.Telegram, fmt.Sprintf("PR: `%s`\n\nHash: `%s`\n\nStatus: `%s`", getInvoiceParams.PR, string(getInvoiceParams.Hash), getInvoiceParams.Status))
 
 	return
 }
