@@ -43,8 +43,9 @@ type Settings struct {
 }
 
 type NodeSettings struct {
-	NodeType  string              `json:"nodetype"`
-	LNDParams *satdress.LNDParams `gorm:"embedded;embeddedPrefix:lndparams_"`
+	NodeType     string                 `json:"nodetype"`
+	LNDParams    *satdress.LNDParams    `gorm:"embedded;embeddedPrefix:lndparams_"`
+	LNbitsParams *satdress.LNBitsParams `gorm:"embedded;embeddedPrefix:lnbitsparams_"`
 }
 
 const (

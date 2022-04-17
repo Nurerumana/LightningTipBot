@@ -29,7 +29,7 @@ var Client = &http.Client{
 }
 
 type LNDParams struct {
-	Cert       []byte `json:"to" gorm:"-"`
+	Cert       []byte `json:"cert" gorm:"-"`
 	CertString string `json:"certstring"`
 	Host       string `json:"host"`
 	Macaroon   string `json:"macaroon"`
@@ -39,13 +39,23 @@ func (l LNDParams) getCert() []byte { return l.Cert }
 func (l LNDParams) isLocal() bool   { return strings.HasPrefix(l.Host, "https://127.0.0.1") }
 func (l LNDParams) isTor() bool     { return strings.Index(l.Host, ".onion") != -1 }
 
+type LNBitsParams struct {
+	Cert string `json:"certstring"`
+	Host string `json:"host"`
+	Key  string `json:"key"`
+}
+
+func (l LNBitsParams) getCert() []byte { return []byte(l.Cert) }
+func (l LNBitsParams) isTor() bool     { return strings.Index(l.Host, ".onion") != -1 }
+func (l LNBitsParams) isLocal() bool   { return strings.HasPrefix(l.Host, "https://127.0.0.1") }
+
 type BackendParams interface {
 	getCert() []byte
 	isTor() bool
 	isLocal() bool
 }
 
-type GetInvoiceParams struct {
+type Params struct {
 	Backend         BackendParams
 	Msatoshi        int64
 	Description     string
@@ -61,7 +71,7 @@ type CheckInvoiceParams struct {
 	Status  string
 }
 
-func GetInvoice(params GetInvoiceParams) (CheckInvoiceParams, error) {
+func MakeInvoice(params Params) (CheckInvoiceParams, error) {
 	defer func(prevTransport http.RoundTripper) {
 		Client.Transport = prevTransport
 	}(Client.Transport)
@@ -89,9 +99,9 @@ func GetInvoice(params GetInvoiceParams) (CheckInvoiceParams, error) {
 	Client.Transport = specialTransport
 
 	// description hash?
-	var _, b64h string
+	var hexh, b64h string
 	if params.DescriptionHash != nil {
-		_ = hex.EncodeToString(params.DescriptionHash)
+		hexh = hex.EncodeToString(params.DescriptionHash)
 		b64h = base64.StdEncoding.EncodeToString(params.DescriptionHash)
 	}
 
@@ -146,6 +156,58 @@ func GetInvoice(params GetInvoiceParams) (CheckInvoiceParams, error) {
 			Status:  "OPEN",
 		}
 		return checkInvoiceParams, nil
+
+	case LNBitsParams:
+		body, _ := sjson.Set("{}", "amount", params.Msatoshi/1000)
+		body, _ = sjson.Set(body, "out", false)
+
+		if params.DescriptionHash == nil {
+			if params.Description == "" {
+				body, _ = sjson.Set(body, "memo", "invoice")
+			} else {
+				body, _ = sjson.Set(body, "memo", params.Description)
+			}
+		} else {
+			body, _ = sjson.Set(body, "description_hash", hexh)
+		}
+
+		req, err := http.NewRequest("POST",
+			backend.Host+"/api/v1/payments",
+			bytes.NewBufferString(body),
+		)
+		if err != nil {
+			return CheckInvoiceParams{}, err
+		}
+
+		req.Header.Set("X-Api-Key", backend.Key)
+		req.Header.Set("Content-Type", "application/json")
+		resp, err := Client.Do(req)
+		if err != nil {
+			return CheckInvoiceParams{}, err
+		}
+		defer resp.Body.Close()
+		if resp.StatusCode >= 300 {
+			body, _ := ioutil.ReadAll(resp.Body)
+			text := string(body)
+			if len(text) > 300 {
+				text = text[:300]
+			}
+			return CheckInvoiceParams{}, fmt.Errorf("call to lnbits failed (%d): %s", resp.StatusCode, text)
+		}
+
+		defer resp.Body.Close()
+		b, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return CheckInvoiceParams{}, err
+		}
+		// bot.Cache.Set(shopView.ID, shopView, &store.Options{Expiration: 24 * time.Hour})
+		checkInvoiceParams := CheckInvoiceParams{
+			Backend: params.Backend,
+			PR:      gjson.ParseBytes(b).Get("payment_request").String(),
+			Hash:    []byte(gjson.ParseBytes(b).Get("payment_hash").String()),
+			Status:  "OPEN",
+		}
+		return checkInvoiceParams, nil
 	}
 	return CheckInvoiceParams{}, errors.New("missing backend params")
 }
@@ -179,7 +241,7 @@ func CheckInvoice(params CheckInvoiceParams) (CheckInvoiceParams, error) {
 
 	switch backend := params.Backend.(type) {
 	case LNDParams:
-		log.Debugf("Checking invoice %s at %s", base64.StdEncoding.EncodeToString(params.Hash), backend.Host)
+		log.Debugf("Checking LND invoice %s at %s", base64.StdEncoding.EncodeToString(params.Hash), backend.Host)
 		p, err := base64.StdEncoding.DecodeString(string(params.Hash))
 		if err != nil {
 			return CheckInvoiceParams{}, fmt.Errorf("invalid hash")
@@ -221,6 +283,47 @@ func CheckInvoice(params CheckInvoiceParams) (CheckInvoiceParams, error) {
 		}
 		// bot.Cache.Set(shopView.ID, shopView, &store.Options{Expiration: 24 * time.Hour})
 		params.Status = gjson.ParseBytes(b).Get("state").String()
+		return params, nil
+
+	case LNBitsParams:
+		log.Debugf("Checking LNBits invoice %s at %s", base64.StdEncoding.EncodeToString(params.Hash), backend.Host)
+
+		log.Debug("Getting ", backend.Host+"/api/v1/payments/"+string(params.Hash))
+		req, err := http.NewRequest("GET", backend.Host+"/api/v1/payments/"+string(params.Hash), nil)
+		if err != nil {
+			return CheckInvoiceParams{}, err
+		}
+
+		req.Header.Set("X-Api-Key", backend.Key)
+		req.Header.Set("Content-Type", "application/json")
+		resp, err := Client.Do(req)
+		if err != nil {
+			return CheckInvoiceParams{}, err
+		}
+		defer resp.Body.Close()
+		if resp.StatusCode >= 300 {
+			body, _ := ioutil.ReadAll(resp.Body)
+			text := string(body)
+			if len(text) > 300 {
+				text = text[:300]
+			}
+			return CheckInvoiceParams{}, fmt.Errorf("call to lnbits failed (%d): %s", resp.StatusCode, text)
+		}
+
+		defer resp.Body.Close()
+		b, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return CheckInvoiceParams{}, err
+		}
+		// bot.Cache.Set(shopView.ID, shopView, &store.Options{Expiration: 24 * time.Hour})
+
+		// status := gjson.ParseBytes(b).String()
+		status := gjson.ParseBytes(b).Get("paid").String()
+		if status == "true" {
+			params.Status = "SETTLED"
+		} else {
+			params.Status = "OPEN"
+		}
 		return params, nil
 	}
 	return CheckInvoiceParams{}, errors.New("missing backend params")
