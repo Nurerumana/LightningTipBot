@@ -77,6 +77,10 @@ func MakeInvoice(params Params) (CheckInvoiceParams, error) {
 		Client.Transport = prevTransport
 	}(Client.Transport)
 
+	if params.Backend == nil {
+		return CheckInvoiceParams{}, errors.New("no backend specified")
+	}
+
 	specialTransport := &http.Transport{}
 
 	// use a cert or skip TLS verification?
@@ -208,8 +212,9 @@ func MakeInvoice(params Params) (CheckInvoiceParams, error) {
 			Status:  "OPEN",
 		}
 		return checkInvoiceParams, nil
+	default:
+		return CheckInvoiceParams{}, errors.New("wrong backend type")
 	}
-	return CheckInvoiceParams{}, errors.New("missing backend params")
 }
 
 func CheckInvoice(params CheckInvoiceParams) (CheckInvoiceParams, error) {
@@ -217,6 +222,9 @@ func CheckInvoice(params CheckInvoiceParams) (CheckInvoiceParams, error) {
 		Client.Transport = prevTransport
 	}(Client.Transport)
 
+	if params.Backend == nil {
+		return CheckInvoiceParams{}, errors.New("no backend specified")
+	}
 	specialTransport := &http.Transport{}
 
 	// use a cert or skip TLS verification?
@@ -311,13 +319,15 @@ func CheckInvoice(params CheckInvoiceParams) (CheckInvoiceParams, error) {
 		if err != nil {
 			return CheckInvoiceParams{}, err
 		}
-		status := gjson.ParseBytes(b).Get("paid").String()
+		status := strings.ToLower(gjson.ParseBytes(b).Get("paid").String())
 		if status == "true" {
 			params.Status = "SETTLED"
 		} else {
 			params.Status = "OPEN"
 		}
 		return params, nil
+	default:
+		return CheckInvoiceParams{}, errors.New("missing backend params")
 	}
 	return CheckInvoiceParams{}, errors.New("missing backend params")
 }

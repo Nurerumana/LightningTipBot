@@ -35,6 +35,7 @@ var (
 	payingInvoiceErrorMessage      = "❌ Could not route payment. Your funds are still available."
 	invoiceRoutedMessage           = "✅ *Payment routed to your node.*"
 	invoiceSettledMessage          = "✅ *Invoice settled.*"
+	nodeAddedMessage               = "✅ *Node added.*"
 	satdressCheckInvoicenMenu      = &tb.ReplyMarkup{ResizeKeyboard: true}
 	btnSatdressCheckInvoice        = satdressCheckInvoicenMenu.Data(checkInvoiceButtonMessage, "satdress_check_invoice")
 )
@@ -187,12 +188,6 @@ func (bot *TipBot) registerNodeHandler(ctx intercept.Context) (intercept.Context
 		// save node in db
 		user.Settings.Node.LNDParams = &backend
 		user.Settings.Node.NodeType = "lnd"
-
-		err = UpdateUserRecord(user, *bot)
-		if err != nil {
-			log.Errorf("[registerNodeHandler] could not update record of user %s: %v", GetUserStr(user.Telegram), err)
-			return ctx, err
-		}
 	case satdress.LNBitsParams:
 		// get test invoice from user's node
 		getInvoiceParams, err := satdress.MakeInvoice(
@@ -207,23 +202,22 @@ func (bot *TipBot) registerNodeHandler(ctx intercept.Context) (intercept.Context
 			bot.tryEditMessage(check_message, errorCouldNotAddNodeMessage)
 			return ctx, err
 		}
-
 		// save node in db
 		user.Settings.Node.LNbitsParams = &backend
 		user.Settings.Node.NodeType = "lnbits"
 
-		err = UpdateUserRecord(user, *bot)
-		if err != nil {
-			log.Errorf("[registerNodeHandler] could not update record of user %s: %v", GetUserStr(user.Telegram), err)
-			return ctx, err
-		}
+	}
+	err = UpdateUserRecord(user, *bot)
+	if err != nil {
+		log.Errorf("[registerNodeHandler] could not update record of user %s: %v", GetUserStr(user.Telegram), err)
+		return ctx, err
 	}
 	node_info_str, err := nodeInfoString(&user.Settings.Node)
 	if err != nil {
 		log.Infof("Could not get node info for user %s", GetUserStr(user.Telegram))
 		return ctx, err
 	}
-	bot.tryEditMessage(check_message, node_info_str)
+	bot.tryEditMessage(check_message, fmt.Sprintf("%s\n\n%s", node_info_str, nodeAddedMessage))
 	return ctx, nil
 }
 
