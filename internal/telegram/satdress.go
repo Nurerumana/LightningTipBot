@@ -76,6 +76,7 @@ func parseUserSettingInput(ctx intercept.Context, m *tb.Message) (satdress.Backe
 		host := splits[3]
 		key := splits[4]
 
+		host = strings.TrimSuffix(host, "/")
 		hostsplit := strings.Split(host, ".")
 		if len(hostsplit) == 0 {
 			return params, fmt.Errorf("host has wrong format")
@@ -88,6 +89,25 @@ func parseUserSettingInput(ctx intercept.Context, m *tb.Message) (satdress.Backe
 	return params, fmt.Errorf("unknown backend type. Supported types: lnd, cln, lnbits")
 }
 
+func nodeInfoString(node *lnbits.NodeSettings) (string, error) {
+	if len(node.NodeType) == 0 {
+		return "", fmt.Errorf("node type is empty")
+	}
+	var node_info_str_filled string
+	var node_info_str string
+	switch strings.ToLower(node.NodeType) {
+	case "lnd":
+		node_info_str = "*Type:* `%s`\n\n*Host:*\n\n`%s`\n\n*Macaroon:*\n\n`%s`\n\n*Cert:*\n\n`%s`"
+		node_info_str_filled = fmt.Sprintf(node_info_str, node.NodeType, node.LNDParams.Host, node.LNDParams.Macaroon, node.LNDParams.CertString)
+	case "lnbits":
+		node_info_str = "*Type:* `%s`\n\n*Host:*\n\n`%s`\n\n*Key:*\n\n`%s`"
+		node_info_str_filled = fmt.Sprintf(node_info_str, node.NodeType, node.LNbitsParams.Host, node.LNbitsParams.Key)
+	default:
+		return "", fmt.Errorf("unknown node type")
+	}
+	return fmt.Sprintf("ℹ️ *Your node information.*\n\n%s", node_info_str_filled), nil
+}
+
 func (bot *TipBot) getNodeHandler(ctx intercept.Context) (intercept.Context, error) {
 	m := ctx.Message()
 	user, err := GetLnbitsUserWithSettings(m.Sender, *bot)
@@ -95,14 +115,19 @@ func (bot *TipBot) getNodeHandler(ctx intercept.Context) (intercept.Context, err
 		log.Infof("Could not get user settings for user %s", GetUserStr(user.Telegram))
 		return ctx, err
 	}
-	node_info_str := "*Host:*\n`%s`\n*Macaroon:*\n`%s`\n*Cert:*\n`%s`"
-	if user.Settings != nil && user.Settings.Node.LNDParams != nil {
-		node_info_str_filled := fmt.Sprintf(node_info_str, user.Settings.Node.LNDParams.Host, user.Settings.Node.LNDParams.Macaroon, user.Settings.Node.LNDParams.CertString)
-		resp_str := fmt.Sprintf("ℹ️ *Your node information.*\n\n%s", node_info_str_filled)
-		bot.trySendMessage(m.Sender, resp_str)
-	} else {
+
+	if user.Settings == nil {
 		bot.trySendMessage(m.Sender, "You did not register a node yet.")
+		return ctx, fmt.Errorf("no node registered")
 	}
+
+	node_info_str, err := nodeInfoString(&user.Settings.Node)
+	if err != nil {
+		log.Infof("Could not get node info for user %s", GetUserStr(user.Telegram))
+		return ctx, err
+	}
+	bot.trySendMessage(m.Sender, node_info_str)
+
 	return ctx, nil
 }
 
@@ -160,18 +185,13 @@ func (bot *TipBot) registerNodeHandler(ctx intercept.Context) (intercept.Context
 
 		// save node in db
 		user.Settings.Node.LNDParams = &backend
-		user.Settings.Node.NodeType = "LND"
+		user.Settings.Node.NodeType = "lnd"
 
 		err = UpdateUserRecord(user, *bot)
 		if err != nil {
 			log.Errorf("[registerNodeHandler] could not update record of user %s: %v", GetUserStr(user.Telegram), err)
 			return ctx, err
 		}
-
-		node_info_str := "*Host:*\n`%s` (*Type*: `%s`)\n\n*Macaroon:*\n`%s`\n\n*Cert:*\n`%s`"
-		node_info_str_filled := fmt.Sprintf(node_info_str, backend.Host, user.Settings.Node.NodeType, backend.Macaroon, backend.Cert)
-		resp_str := fmt.Sprintf("✅ *Node added.*\n\n%s", node_info_str_filled)
-		bot.tryEditMessage(check_message, resp_str)
 	case satdress.LNBitsParams:
 		// get test invoice from user's node
 		getInvoiceParams, err := satdress.MakeInvoice(
@@ -196,12 +216,13 @@ func (bot *TipBot) registerNodeHandler(ctx intercept.Context) (intercept.Context
 			log.Errorf("[registerNodeHandler] could not update record of user %s: %v", GetUserStr(user.Telegram), err)
 			return ctx, err
 		}
-
-		node_info_str := "*Host:*\n`%s` (*Type*: `%s`)\n\n*Key:*\n`%s`"
-		node_info_str_filled := fmt.Sprintf(node_info_str, backend.Host, user.Settings.Node.NodeType, backend.Key)
-		resp_str := fmt.Sprintf("✅ *Node added.*\n\n%s", node_info_str_filled)
-		bot.tryEditMessage(check_message, resp_str)
 	}
+	node_info_str, err := nodeInfoString(&user.Settings.Node)
+	if err != nil {
+		log.Infof("Could not get node info for user %s", GetUserStr(user.Telegram))
+		return ctx, err
+	}
+	bot.tryEditMessage(check_message, node_info_str)
 	return ctx, nil
 }
 

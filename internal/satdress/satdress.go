@@ -20,7 +20,8 @@ import (
 	"github.com/tidwall/sjson"
 )
 
-// from github.com/fiatjaf/makeinvoice
+// Much of this is from github.com/fiatjaf/makeinvoice
+// but with added "checkInvoice" and http proxy support
 
 var HttpProxyURL = internal.Configuration.Bot.HttpProxy
 
@@ -107,6 +108,7 @@ func MakeInvoice(params Params) (CheckInvoiceParams, error) {
 
 	switch backend := params.Backend.(type) {
 	case LNDParams:
+		log.Debugf("[MakeInvoice] LND invoice at %s", backend.Host)
 		body, _ := sjson.Set("{}", "value_msat", params.Msatoshi)
 
 		if params.DescriptionHash == nil {
@@ -158,6 +160,7 @@ func MakeInvoice(params Params) (CheckInvoiceParams, error) {
 		return checkInvoiceParams, nil
 
 	case LNBitsParams:
+		log.Debugf("[MakeInvoice] LNBits invoice at %s", backend.Host)
 		body, _ := sjson.Set("{}", "amount", params.Msatoshi/1000)
 		body, _ = sjson.Set(body, "out", false)
 
@@ -194,13 +197,10 @@ func MakeInvoice(params Params) (CheckInvoiceParams, error) {
 			}
 			return CheckInvoiceParams{}, fmt.Errorf("call to lnbits failed (%d): %s", resp.StatusCode, text)
 		}
-
-		defer resp.Body.Close()
 		b, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
 			return CheckInvoiceParams{}, err
 		}
-		// bot.Cache.Set(shopView.ID, shopView, &store.Options{Expiration: 24 * time.Hour})
 		checkInvoiceParams := CheckInvoiceParams{
 			Backend: params.Backend,
 			PR:      gjson.ParseBytes(b).Get("payment_request").String(),
@@ -241,7 +241,7 @@ func CheckInvoice(params CheckInvoiceParams) (CheckInvoiceParams, error) {
 
 	switch backend := params.Backend.(type) {
 	case LNDParams:
-		log.Debugf("Checking LND invoice %s at %s", base64.StdEncoding.EncodeToString(params.Hash), backend.Host)
+		log.Debugf("[CheckInvoice] LND invoice %s at %s", base64.StdEncoding.EncodeToString(params.Hash), backend.Host)
 		p, err := base64.StdEncoding.DecodeString(string(params.Hash))
 		if err != nil {
 			return CheckInvoiceParams{}, fmt.Errorf("invalid hash")
@@ -281,13 +281,11 @@ func CheckInvoice(params CheckInvoiceParams) (CheckInvoiceParams, error) {
 		if err != nil {
 			return CheckInvoiceParams{}, err
 		}
-		// bot.Cache.Set(shopView.ID, shopView, &store.Options{Expiration: 24 * time.Hour})
 		params.Status = gjson.ParseBytes(b).Get("state").String()
 		return params, nil
 
 	case LNBitsParams:
-		log.Debugf("Checking LNBits invoice %s at %s", base64.StdEncoding.EncodeToString(params.Hash), backend.Host)
-
+		log.Debugf("[CheckInvoice] LNBits invoice %s at %s", base64.StdEncoding.EncodeToString(params.Hash), backend.Host)
 		log.Debug("Getting ", backend.Host+"/api/v1/payments/"+string(params.Hash))
 		req, err := http.NewRequest("GET", backend.Host+"/api/v1/payments/"+string(params.Hash), nil)
 		if err != nil {
@@ -309,15 +307,10 @@ func CheckInvoice(params CheckInvoiceParams) (CheckInvoiceParams, error) {
 			}
 			return CheckInvoiceParams{}, fmt.Errorf("call to lnbits failed (%d): %s", resp.StatusCode, text)
 		}
-
-		defer resp.Body.Close()
 		b, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
 			return CheckInvoiceParams{}, err
 		}
-		// bot.Cache.Set(shopView.ID, shopView, &store.Options{Expiration: 24 * time.Hour})
-
-		// status := gjson.ParseBytes(b).String()
 		status := gjson.ParseBytes(b).Get("paid").String()
 		if status == "true" {
 			params.Status = "SETTLED"
