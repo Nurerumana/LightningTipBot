@@ -23,6 +23,7 @@ import (
 )
 
 var (
+	registerNodeMessage            = "📖 You did not register a node yet.\n\nCurrently supported backends: `lnd` and `lnbits`\n\nTo register a node, type: `/node add <Type> <Node_info>`\n\nFor LND: `/node add lnd <Host> <Macaroon> <Cert>`\n\nFor LNbits: `/node add lnbits <Host> <Key>`\n\nFor security reasons, you should only use an invoice macaroon for LND and an invoice key for LNbits."
 	checkingInvoiceMessage         = "⏳ Checking invoice on your node..."
 	invoiceNotSettledMessage       = "❌ Invoice has not settled yet."
 	checkInvoiceButtonMessage      = "🔄 Check invoice"
@@ -117,7 +118,7 @@ func (bot *TipBot) getNodeHandler(ctx intercept.Context) (intercept.Context, err
 	}
 
 	if user.Settings == nil {
-		bot.trySendMessage(m.Sender, "You did not register a node yet.")
+		bot.trySendMessage(m.Sender, registerNodeMessage)
 		return ctx, fmt.Errorf("no node registered")
 	}
 
