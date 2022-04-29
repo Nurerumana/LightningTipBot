@@ -243,7 +243,7 @@ func (bot *TipBot) invHandler(ctx intercept.Context) (intercept.Context, error) 
 	check_message := bot.trySendMessageEditable(user.Telegram, routingInvoiceMessage)
 	var getInvoiceParams satdress.CheckInvoiceParams
 
-	if user.Settings.Node.NodeType == "LND" {
+	if user.Settings.Node.NodeType == "lnd" {
 		// get invoice from user's node
 		getInvoiceParams, err = satdress.MakeInvoice(
 			satdress.Params{
@@ -445,7 +445,7 @@ func (bot *TipBot) satdressProxyRelayPaymentHandler(event Event) {
 	check_message := bot.trySendMessageEditable(user.Telegram, routingInvoiceMessage)
 	var getInvoiceParams satdress.CheckInvoiceParams
 	var err error
-	if user.Settings.Node.NodeType == "LND" {
+	if user.Settings.Node.NodeType == "lnd" {
 		// get invoice from user's node
 		getInvoiceParams, err = satdress.MakeInvoice(
 			satdress.Params{
