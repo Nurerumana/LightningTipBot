@@ -32,8 +32,8 @@ var (
 
 func init() {
 	mainMenu.Reply(
-		mainMenu.Row(btnBalanceMainMenu, btnHelpMainMenu),
-		mainMenu.Row(btnInvoiceMainMenu, btnSendMainMenu),
+		mainMenu.Row(btnBalanceMainMenu),
+		mainMenu.Row(btnInvoiceMainMenu, btnSendMainMenu, btnHelpMainMenu),
 	)
 }
 
