@@ -23,7 +23,7 @@ import (
 )
 
 var (
-	registerNodeMessage            = "📖 You did not register a node yet.\n\nCurrently supported backends: `lnd` and `lnbits`\n\nTo register a node, type: `/node add <Type> <Node_info>`\n\nFor LND: `/node add lnd <Host> <Macaroon> <Cert>`\n\nFor LNbits: `/node add lnbits <Host> <Key>`\n\nFor security reasons, you should only use an invoice macaroon for LND and an invoice key for LNbits."
+	registerNodeMessage            = "📖 You did not register a node yet.\n\nCurrently supported backends: `lnd` and `lnbits`\nTo register a node, type: `/node add <Type> <Node_info>`\n*LND:* `/node add lnd <Host> <Macaroon> <Cert>`\n*LNbits:* `/node add lnbits <Host> <Key>`\n\nFor security reasons, you should *only use an invoice macaroon* for LND and an *invoice key* for LNbits."
 	checkingInvoiceMessage         = "⏳ Checking invoice on your node..."
 	invoiceNotSettledMessage       = "❌ Invoice has not settled yet."
 	checkInvoiceButtonMessage      = "🔄 Check invoice"
@@ -88,7 +88,7 @@ func parseUserSettingInput(ctx intercept.Context, m *tb.Message) (satdress.Backe
 			Key:  key,
 		}, nil
 	}
-	return params, fmt.Errorf("unknown backend type. Supported types: lnd, cln, lnbits")
+	return params, fmt.Errorf("unknown backend type. Supported types: `lnd`, `lnbits`")
 }
 
 func nodeInfoString(node *lnbits.NodeSettings) (string, error) {
@@ -126,6 +126,7 @@ func (bot *TipBot) getNodeHandler(ctx intercept.Context) (intercept.Context, err
 	node_info_str, err := nodeInfoString(&user.Settings.Node)
 	if err != nil {
 		log.Infof("Could not get node info for user %s", GetUserStr(user.Telegram))
+		bot.trySendMessage(m.Sender, registerNodeMessage)
 		return ctx, err
 	}
 	bot.trySendMessage(m.Sender, node_info_str)
@@ -215,6 +216,7 @@ func (bot *TipBot) registerNodeHandler(ctx intercept.Context) (intercept.Context
 	node_info_str, err := nodeInfoString(&user.Settings.Node)
 	if err != nil {
 		log.Infof("Could not get node info for user %s", GetUserStr(user.Telegram))
+		bot.trySendMessage(m.Sender, registerNodeMessage)
 		return ctx, err
 	}
 	bot.tryEditMessage(check_message, fmt.Sprintf("%s\n\n%s", node_info_str, nodeAddedMessage))
