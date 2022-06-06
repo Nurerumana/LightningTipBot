@@ -94,6 +94,7 @@ func (bot TipBot) createWallet(user *lnbits.User) error {
 		log.Errorln(errormsg)
 		return err
 	}
+	user.Wallet = u.Wallet
 	user.ID = u.ID
 	user.Name = u.Name
 	user.AnonID = fmt.Sprint(str.Int32Hash(user.ID))
