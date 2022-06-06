@@ -67,6 +67,7 @@ func (c *Client) CreateUserWithInitialWallet(userName, walletName, adminId strin
 		err = fmt.Errorf("could not create initial wallet")
 		return
 	}
+	wal.Wallet = &Wallet{}
 	err = json.Unmarshal([]byte(res.Raw), wal.Wallet)
 	return
 }
