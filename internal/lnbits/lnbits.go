@@ -1,6 +1,9 @@
 package lnbits
 
 import (
+	"encoding/json"
+	"fmt"
+	"github.com/tidwall/gjson"
 	"time"
 
 	"github.com/imroc/req"
@@ -59,6 +62,12 @@ func (c *Client) CreateUserWithInitialWallet(userName, walletName, adminId strin
 		return
 	}
 	err = resp.ToJSON(&wal)
+	res := gjson.Get(resp.String(), "wallets.0")
+	if res.Index == 0 {
+		err = fmt.Errorf("could not create initial wallet")
+		return
+	}
+	err = json.Unmarshal([]byte(res.Raw), wal.Wallet)
 	return
 }
 
