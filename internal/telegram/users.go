@@ -103,7 +103,7 @@ func (bot *TipBot) CreateWalletForTelegramUser(tbUser *tb.User) (*lnbits.User, e
 	user := &lnbits.User{Telegram: tbUser}
 	userStr := GetUserStr(tbUser)
 	log.Printf("[CreateWalletForTelegramUser] Creating wallet for user %s ... ", userStr)
-	err := bot.createWallet(user)
+	err := bot.createWallet(*user)
 	if err != nil {
 		errmsg := fmt.Sprintf("[CreateWalletForTelegramUser] Error: Could not create wallet for user %s", userStr)
 		log.Errorln(errmsg)

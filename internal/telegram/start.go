@@ -52,12 +52,12 @@ func (bot TipBot) initWallet(tguser *tb.User) (*lnbits.User, error) {
 	user, err := GetUser(tguser, bot)
 	if stderrors.Is(err, gorm.ErrRecordNotFound) {
 		user = &lnbits.User{Telegram: tguser}
-		err = bot.createWallet(user)
+		err = bot.createWallet(*user)
 		if err != nil {
 			return user, err
 		}
 		// set user initialized
-		user, err := GetUser(tguser, bot)
+		user, err = GetUser(tguser, bot)
 		user.Initialized = true
 		err = UpdateUserRecord(user, bot)
 		if err != nil {
@@ -83,9 +83,9 @@ func (bot TipBot) initWallet(tguser *tb.User) (*lnbits.User, error) {
 	return user, nil
 }
 
-func (bot TipBot) createWallet(user *lnbits.User) error {
+func (bot TipBot) createWallet(user lnbits.User) error {
 	UserStr := GetUserStr(user.Telegram)
-	u, err := bot.Client.CreateUserWithInitialWallet(strconv.FormatInt(user.Telegram.ID, 10),
+	user, err := bot.Client.CreateUserWithInitialWallet(strconv.FormatInt(user.Telegram.ID, 10),
 		fmt.Sprintf("%d (%s)", user.Telegram.ID, UserStr),
 		internal.Configuration.Lnbits.AdminId,
 		UserStr)
@@ -94,16 +94,13 @@ func (bot TipBot) createWallet(user *lnbits.User) error {
 		log.Errorln(errormsg)
 		return err
 	}
-	user.Wallet = u.Wallet
-	user.ID = u.ID
-	user.Name = u.Name
 	user.AnonID = fmt.Sprint(str.Int32Hash(user.ID))
-	user.AnonIDSha256 = str.AnonIdSha256(user)
-	user.UUID = str.UUIDSha256(user)
+	user.AnonIDSha256 = str.AnonIdSha256(&user)
+	user.UUID = str.UUIDSha256(&user)
 
 	user.Initialized = false
 	user.CreatedAt = time.Now()
-	err = UpdateUserRecord(user, bot)
+	err = UpdateUserRecord(&user, bot)
 	if err != nil {
 		errormsg := fmt.Sprintf("[createWallet] Update user record error: %s", err.Error())
 		log.Errorln(errormsg)
