@@ -83,15 +83,13 @@ func (bot TipBot) initWallet(tguser *tb.User) (*lnbits.User, error) {
 }
 
 func (bot TipBot) createWallet(u *tb.User) (*lnbits.User, error) {
-	UserStr := GetUserStr(u)
+	userStr := GetUserStr(u)
 	user, err := bot.Client.CreateUserWithInitialWallet(strconv.FormatInt(u.ID, 10),
-		fmt.Sprintf("%d (%s)", u.ID, UserStr),
+		fmt.Sprintf("%d (%s)", u.ID, userStr),
 		internal.Configuration.Lnbits.AdminId,
-		UserStr)
+		userStr)
 	if err != nil {
-		errormsg := fmt.Sprintf("[createWallet] Create wallet error: %s", err.Error())
-		log.Errorln(errormsg)
-		return nil, err
+		return nil, fmt.Errorf("[createWallet] Create wallet error: %v", err)
 	}
 	user.AnonID = fmt.Sprint(str.Int32Hash(user.ID))
 	user.AnonIDSha256 = str.AnonIdSha256(&user)
@@ -101,9 +99,7 @@ func (bot TipBot) createWallet(u *tb.User) (*lnbits.User, error) {
 	user.CreatedAt = time.Now()
 	err = UpdateUserRecord(&user, bot)
 	if err != nil {
-		errormsg := fmt.Sprintf("[createWallet] Update user record error: %s", err.Error())
-		log.Errorln(errormsg)
-		return nil, err
+		return nil, fmt.Errorf("[createWallet] Update user record error: %v", err)
 	}
 	return &user, nil
 }
