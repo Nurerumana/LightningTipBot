@@ -59,8 +59,6 @@ func (bot TipBot) userWithInitWallet(tguser *tb.User) (*lnbits.User, error) {
 			if err != nil {
 				return user, err
 			}
-			// set user initialized
-			user, err = GetUser(tguser, bot)
 			user.Initialized = true
 			err = UpdateUserRecord(user, bot)
 			if err != nil {
