@@ -27,14 +27,14 @@ func ResetUserState(user *lnbits.User, bot *TipBot) {
 }
 
 func GetUserStr(user *tb.User) string {
-	userStr := fmt.Sprintf("@%s", user.Username)
-	// if user does not have a username
-	if len(userStr) < 2 && user.FirstName != "" {
-		userStr = fmt.Sprintf("%s", user.FirstName)
-	} else if len(userStr) < 2 {
-		userStr = fmt.Sprintf("%d", user.ID)
+	if len(user.Username) == 0 {
+		if user.FirstName != "" {
+			return fmt.Sprintf("%s", user.FirstName)
+		} else {
+			return fmt.Sprintf("%d", user.ID)
+		}
 	}
-	return userStr
+	return fmt.Sprintf("@%s", user.Username)
 }
 
 func GetUserStrMd(user *tb.User) string {
