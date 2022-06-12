@@ -51,8 +51,7 @@ func (bot TipBot) startHandler(ctx intercept.Context) (intercept.Context, error)
 func (bot TipBot) initWallet(tguser *tb.User) (*lnbits.User, error) {
 	user, err := GetUser(tguser, bot)
 	if stderrors.Is(err, gorm.ErrRecordNotFound) {
-		user = &lnbits.User{Telegram: tguser}
-		err = bot.createWallet(*user)
+		user, err = bot.createWallet(tguser)
 		if err != nil {
 			return user, err
 		}
@@ -83,16 +82,16 @@ func (bot TipBot) initWallet(tguser *tb.User) (*lnbits.User, error) {
 	return user, nil
 }
 
-func (bot TipBot) createWallet(user lnbits.User) error {
-	UserStr := GetUserStr(user.Telegram)
-	user, err := bot.Client.CreateUserWithInitialWallet(strconv.FormatInt(user.Telegram.ID, 10),
-		fmt.Sprintf("%d (%s)", user.Telegram.ID, UserStr),
+func (bot TipBot) createWallet(u *tb.User) (*lnbits.User, error) {
+	UserStr := GetUserStr(u)
+	user, err := bot.Client.CreateUserWithInitialWallet(strconv.FormatInt(u.ID, 10),
+		fmt.Sprintf("%d (%s)", u.ID, UserStr),
 		internal.Configuration.Lnbits.AdminId,
 		UserStr)
 	if err != nil {
 		errormsg := fmt.Sprintf("[createWallet] Create wallet error: %s", err.Error())
 		log.Errorln(errormsg)
-		return err
+		return nil, err
 	}
 	user.AnonID = fmt.Sprint(str.Int32Hash(user.ID))
 	user.AnonIDSha256 = str.AnonIdSha256(&user)
@@ -104,7 +103,7 @@ func (bot TipBot) createWallet(user lnbits.User) error {
 	if err != nil {
 		errormsg := fmt.Sprintf("[createWallet] Update user record error: %s", err.Error())
 		log.Errorln(errormsg)
-		return err
+		return nil, err
 	}
-	return nil
+	return &user, nil
 }
