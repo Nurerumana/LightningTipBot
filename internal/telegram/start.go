@@ -48,6 +48,9 @@ func (bot TipBot) startHandler(ctx intercept.Context) (intercept.Context, error)
 	return ctx, nil
 }
 
+// initWallet will ensure that lnbits.User is initialized.
+// Initialized users have already talked to the bot,
+// therefor they are able to receive messages from the bot.
 func (bot TipBot) initWallet(tguser *tb.User) (*lnbits.User, error) {
 	user, err := GetUser(tguser, bot)
 	if stderrors.Is(err, gorm.ErrRecordNotFound) {
@@ -82,6 +85,7 @@ func (bot TipBot) initWallet(tguser *tb.User) (*lnbits.User, error) {
 	return user, nil
 }
 
+// createWallet will create a wallet for any telegram user.
 func (bot TipBot) createWallet(u *tb.User) (*lnbits.User, error) {
 	userStr := GetUserStr(u)
 	user, err := bot.Client.CreateUserWithInitialWallet(strconv.FormatInt(u.ID, 10),
@@ -91,11 +95,11 @@ func (bot TipBot) createWallet(u *tb.User) (*lnbits.User, error) {
 	if err != nil {
 		return nil, fmt.Errorf("[createWallet] Create wallet error: %v", err)
 	}
+	user.Telegram = u
 	user.AnonID = fmt.Sprint(str.Int32Hash(user.ID))
 	user.AnonIDSha256 = str.AnonIdSha256(&user)
 	user.UUID = str.UUIDSha256(&user)
 
-	user.Initialized = false
 	user.CreatedAt = time.Now()
 	err = UpdateUserRecord(&user, bot)
 	if err != nil {
