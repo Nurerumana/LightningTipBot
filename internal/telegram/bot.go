@@ -76,7 +76,7 @@ func (bot TipBot) initBotWallet() error {
 	botWalletInitialisation.Do(func() {
 		_, err := bot.initWallet(bot.Telegram.Me)
 		if err != nil {
-			log.Errorln(fmt.Sprintf("[initBotWallet] Could not initialize bot wallet: %s", err.Error()))
+			log.Errorln(fmt.Sprintf("[initBotWallet] ❌ 🧨 ❌ Could not initialize bot wallet: %s", err.Error()))
 			return
 		}
 	})
