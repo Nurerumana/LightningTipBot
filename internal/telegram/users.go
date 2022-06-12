@@ -108,11 +108,6 @@ func (bot *TipBot) CreateWalletForTelegramUser(tbUser *tb.User) (*lnbits.User, e
 		log.Errorln(errmsg)
 		return user, err
 	}
-	// todo: remove this. we're doing this already in bot.createWallet().
-	err = UpdateUserRecord(user, *bot)
-	if err != nil {
-		return nil, err
-	}
 	log.Printf("[CreateWalletForTelegramUser] Wallet created for user %s. ", userStr)
 	return user, nil
 }
