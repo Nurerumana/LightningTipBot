@@ -80,7 +80,7 @@ func (bot TipBot) userWithInitWallet(tguser *tb.User) (*lnbits.User, error) {
 // createWallet will create a wallet for any telegram user.
 func (bot TipBot) createWallet(u *tb.User) (*lnbits.User, error) {
 	userStr := GetUserStr(u)
-	user, err := bot.Client.CreateUserWithInitialWallet(strconv.FormatInt(u.ID, 10),
+	user, err := bot.Client.CreateUserWithWallet(strconv.FormatInt(u.ID, 10),
 		fmt.Sprintf("%d (%s)", u.ID, userStr),
 		internal.Configuration.Lnbits.AdminId,
 		userStr)

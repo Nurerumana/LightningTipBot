@@ -43,8 +43,8 @@ func (c *Client) GetUser(userId string) (user User, err error) {
 	return
 }
 
-// CreateUserWithInitialWallet creates new user with initial wallet
-func (c *Client) CreateUserWithInitialWallet(userName, walletName, adminId string, email string) (user User, err error) {
+// CreateUserWithWallet creates new user with wallet
+func (c *Client) CreateUserWithWallet(userName, walletName, adminId string, email string) (user User, err error) {
 	resp, err := req.Post(c.url+"/usermanager/api/v1/users", c.header, req.BodyJSON(struct {
 		WalletName string `json:"wallet_name"`
 		AdminId    string `json:"admin_id"`
