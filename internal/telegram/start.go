@@ -29,7 +29,7 @@ func (bot TipBot) startHandler(ctx intercept.Context) (intercept.Context, error)
 	// bot.helpHandler(m)
 	log.Printf("[⭐️ /start] New user: %s (%d)\n", GetUserStr(ctx.Sender()), ctx.Sender().ID)
 	walletCreationMsg := bot.trySendMessageEditable(ctx.Sender(), Translate(ctx, "startSettingWalletMessage"))
-	user, err := bot.initWallet(ctx.Sender())
+	user, err := bot.userWithInitWallet(ctx.Sender())
 	if err != nil {
 		log.Errorln(fmt.Sprintf("[startHandler] Error with initWallet: %s", err.Error()))
 		bot.tryEditMessage(walletCreationMsg, Translate(ctx, "startWalletErrorMessage"))
@@ -48,10 +48,10 @@ func (bot TipBot) startHandler(ctx intercept.Context) (intercept.Context, error)
 	return ctx, nil
 }
 
-// initWallet will ensure that lnbits.User is initialized.
+// userWithInitWallet will ensure that lnbits.User is initialized.
 // Initialized users have already talked to the bot,
 // therefor they are able to receive messages from the bot.
-func (bot TipBot) initWallet(tguser *tb.User) (*lnbits.User, error) {
+func (bot TipBot) userWithInitWallet(tguser *tb.User) (*lnbits.User, error) {
 	user, err := GetUser(tguser, bot)
 	if err != nil {
 		if stderrors.Is(err, gorm.ErrRecordNotFound) {
