@@ -53,20 +53,25 @@ func (bot TipBot) startHandler(ctx intercept.Context) (intercept.Context, error)
 // therefor they are able to receive messages from the bot.
 func (bot TipBot) initWallet(tguser *tb.User) (*lnbits.User, error) {
 	user, err := GetUser(tguser, bot)
-	if stderrors.Is(err, gorm.ErrRecordNotFound) {
-		user, err = bot.createWallet(tguser)
-		if err != nil {
-			return user, err
+	if err != nil {
+		if stderrors.Is(err, gorm.ErrRecordNotFound) {
+			user, err = bot.createWallet(tguser)
+			if err != nil {
+				return user, err
+			}
+			// set user initialized
+			user, err = GetUser(tguser, bot)
+			user.Initialized = true
+			err = UpdateUserRecord(user, bot)
+			if err != nil {
+				log.Errorln(fmt.Sprintf("[initWallet] error updating user: %s", err.Error()))
+				return user, err
+			}
+			return user, nil
 		}
-		// set user initialized
-		user, err = GetUser(tguser, bot)
-		user.Initialized = true
-		err = UpdateUserRecord(user, bot)
-		if err != nil {
-			log.Errorln(fmt.Sprintf("[initWallet] error updating user: %s", err.Error()))
-			return user, err
-		}
-	} else if !user.Initialized {
+		return nil, err
+	}
+	if !user.Initialized {
 		// update all tip tooltips (with the "initialize me" message) that this user might have received before
 		tipTooltipInitializedHandler(user.Telegram, bot)
 		user.Initialized = true
@@ -75,13 +80,8 @@ func (bot TipBot) initWallet(tguser *tb.User) (*lnbits.User, error) {
 			log.Errorln(fmt.Sprintf("[initWallet] error updating user: %s", err.Error()))
 			return user, err
 		}
-	} else if user.Initialized {
-		// wallet is already initialized
-		return user, nil
-	} else {
-		err = fmt.Errorf("could not initialize wallet")
-		return user, err
 	}
+	// wallet is already initialized
 	return user, nil
 }
 
