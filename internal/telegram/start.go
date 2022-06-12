@@ -64,8 +64,7 @@ func (bot TipBot) initWallet(tguser *tb.User) (*lnbits.User, error) {
 			user.Initialized = true
 			err = UpdateUserRecord(user, bot)
 			if err != nil {
-				log.Errorln(fmt.Sprintf("[initWallet] error updating user: %s", err.Error()))
-				return user, err
+				return user, fmt.Errorf("[initWallet] error updating user: %v", err)
 			}
 			return user, nil
 		}
@@ -77,8 +76,7 @@ func (bot TipBot) initWallet(tguser *tb.User) (*lnbits.User, error) {
 		user.Initialized = true
 		err = UpdateUserRecord(user, bot)
 		if err != nil {
-			log.Errorln(fmt.Sprintf("[initWallet] error updating user: %s", err.Error()))
-			return user, err
+			return user, fmt.Errorf("[initWallet] error updating user: %v", err)
 		}
 	}
 	// wallet is already initialized
