@@ -38,17 +38,16 @@ func GetUserStr(user *tb.User) string {
 }
 
 func GetUserStrMd(user *tb.User) string {
-	userStr := fmt.Sprintf("@%s", user.Username)
 	// if user does not have a username
-	if len(userStr) < 2 && user.FirstName != "" {
-		userStr = fmt.Sprintf("[%s](tg://user?id=%d)", user.FirstName, user.ID)
-		return userStr
-	} else if len(userStr) < 2 {
-		userStr = fmt.Sprintf("[%d](tg://user?id=%d)", user.ID, user.ID)
-		return userStr
+	if len(user.Username) == 0 {
+		if user.FirstName != "" {
+			return fmt.Sprintf("[%s](tg://user?id=%d)", user.FirstName, user.ID)
+		} else {
+			return fmt.Sprintf("[%d](tg://user?id=%d)", user.ID, user.ID)
+		}
 	} else {
 		// escape only if user has a username
-		return str.MarkdownEscape(userStr)
+		return str.MarkdownEscape(fmt.Sprintf("@%s", user.Username))
 	}
 }
 
