@@ -226,8 +226,17 @@ func (bot *TipBot) acceptInlineSendHandler(ctx intercept.Context) (intercept.Con
 		log.Infof("[sendInline] User %s has no wallet.", toUserStr)
 		to, err = bot.CreateWalletForTelegramUser(to.Telegram)
 		if err != nil {
-			errmsg := fmt.Errorf("[sendInline] Error: Could not create wallet for %s", toUserStr)
-			log.Errorln(errmsg)
+			log.WithFields(log.Fields{
+				"module":       "faucet",
+				"func":         "acceptInlineFaucetHandler",
+				"to_user":      GetUserStr(to.Telegram),
+				"to_user_id":   to.ID,
+				"to_wallet_id": to.Wallet.ID,
+				"user":         GetUserStr(fromUser.Telegram),
+				"user_id":      fromUser.ID,
+				"wallet_id":    fromUser.Wallet.ID,
+				"error":        err.Error()},
+			).Errorln("Could not create wallet for user")
 			return ctx, err
 		}
 	}

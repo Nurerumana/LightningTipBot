@@ -116,15 +116,16 @@ func (bot *TipBot) tipHandler(ctx intercept.Context) (intercept.Context, error) 
 		to, err = bot.CreateWalletForTelegramUser(to.Telegram)
 		if err != nil {
 			log.WithFields(log.Fields{
-				"module":      "telegram",
-				"func":        "tipHandler",
-				"path":        "/tip",
-				"to_user":     toUserStr,
-				"to_user_id":  to.ID,
-				"user":        fromUserStr,
-				"user_id":     from.ID,
-				"wallet_id":   from.Wallet.ID,
-				"telegram_id": from.Telegram.ID}).Error(err.Error())
+				"module":       "faucet",
+				"func":         "acceptInlineFaucetHandler",
+				"to_user":      GetUserStr(to.Telegram),
+				"to_user_id":   to.ID,
+				"to_wallet_id": to.Wallet.ID,
+				"user":         GetUserStr(from.Telegram),
+				"user_id":      from.ID,
+				"wallet_id":    from.Wallet.ID,
+				"error":        err.Error()},
+			).Errorln("Could not create wallet for user")
 			return ctx, err
 		}
 	}

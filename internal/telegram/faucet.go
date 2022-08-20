@@ -293,8 +293,17 @@ func (bot *TipBot) acceptInlineFaucetHandler(ctx intercept.Context) (intercept.C
 		if !exists {
 			to, err = bot.CreateWalletForTelegramUser(to.Telegram)
 			if err != nil {
-				errmsg := fmt.Errorf("[faucet] Error: Could not create wallet for %s", toUserStr)
-				log.Errorln(errmsg)
+				log.WithFields(log.Fields{
+					"module":       "faucet",
+					"func":         "acceptInlineFaucetHandler",
+					"to_user":      GetUserStr(to.Telegram),
+					"to_user_id":   to.ID,
+					"to_wallet_id": to.Wallet.ID,
+					"user":         GetUserStr(from.Telegram),
+					"user_id":      from.ID,
+					"wallet_id":    from.Wallet.ID,
+					"error":        err.Error()},
+				).Errorln("Could not create wallet for user")
 				return ctx, err
 			}
 		}
