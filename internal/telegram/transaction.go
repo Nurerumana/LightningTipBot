@@ -103,8 +103,17 @@ func (t *Transaction) SendTransaction(bot *TipBot, from *lnbits.User, to *lnbits
 	// check if fromUser has balance
 	balance, err := bot.GetUserBalance(from)
 	if err != nil {
-		errmsg := fmt.Sprintf("could not get balance of user %s", fromUserStr)
-		log.Errorln(errmsg)
+		log.WithFields(log.Fields{
+			"module":       "telegram",
+			"func":         "SendTransaction",
+			"to_user":      toUserStr,
+			"to_user_id":   to.ID,
+			"to_wallet_id": to.Wallet.ID,
+			"user":         fromUserStr,
+			"user_id":      from.ID,
+			"wallet_id":    from.Wallet.ID,
+			"amount":       amount},
+		).Errorln("error checking balance")
 		return false, err
 	}
 	// check if fromUser has balance
@@ -112,12 +121,12 @@ func (t *Transaction) SendTransaction(bot *TipBot, from *lnbits.User, to *lnbits
 		errmsg := fmt.Sprintf("balance too low.")
 		log.WithFields(log.Fields{
 			"module":      "telegram",
-			"func":        "tipHandler",
+			"func":        "SendTransaction",
 			"to_user":     to.ID,
 			"user":        fromUserStr,
 			"user_id":     from.ID,
 			"wallet_id":   from.Wallet.ID,
-			"telegram_id": from.Telegram.ID}).Warn("Balance of too low")
+			"telegram_id": from.Telegram.ID}).Warn("balance of too low")
 		return false, fmt.Errorf(errmsg)
 	}
 
@@ -134,7 +143,7 @@ func (t *Transaction) SendTransaction(bot *TipBot, from *lnbits.User, to *lnbits
 	if err != nil {
 		log.WithFields(log.Fields{
 			"module":      "telegram",
-			"func":        "tipHandler",
+			"func":        "SendTransaction",
 			"user":        toUserStr,
 			"user_id":     to.ID,
 			"wallet_id":   to.Wallet.ID,
@@ -148,7 +157,7 @@ func (t *Transaction) SendTransaction(bot *TipBot, from *lnbits.User, to *lnbits
 	if err != nil {
 		log.WithFields(log.Fields{
 			"module":       "telegram",
-			"func":         "tipHandler",
+			"func":         "SendTransaction",
 			"user":         fromUserStr,
 			"user_id":      from.ID,
 			"wallet_id":    from.Wallet.ID,
@@ -165,7 +174,7 @@ func (t *Transaction) SendTransaction(bot *TipBot, from *lnbits.User, to *lnbits
 	if err != nil {
 		log.WithFields(log.Fields{
 			"module":       "telegram",
-			"func":         "tipHandler",
+			"func":         "SendTransaction",
 			"user":         fromUserStr,
 			"user_id":      from.ID,
 			"wallet_id":    from.Wallet.ID,
@@ -180,7 +189,7 @@ func (t *Transaction) SendTransaction(bot *TipBot, from *lnbits.User, to *lnbits
 	if err != nil {
 		log.WithFields(log.Fields{
 			"module":       "telegram",
-			"func":         "tipHandler",
+			"func":         "SendTransaction",
 			"user":         fromUserStr,
 			"user_id":      from.ID,
 			"wallet_id":    from.Wallet.ID,
