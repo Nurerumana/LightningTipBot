@@ -36,8 +36,8 @@ func (bot *TipBot) balanceHandler(ctx intercept.Context) (intercept.Context, err
 	balance, err := bot.GetUserBalance(user)
 	if err != nil {
 		log.WithFields(log.Fields{
-			"module":      "api",
-			"func":        "PayInvoice",
+			"module":      "telegram",
+			"func":        "balanceHandler",
 			"path":        "/balance",
 			"user":        usrStr,
 			"user_id":     user.ID,
@@ -48,8 +48,8 @@ func (bot *TipBot) balanceHandler(ctx intercept.Context) (intercept.Context, err
 	}
 
 	log.WithFields(log.Fields{
-		"module":      "api",
-		"func":        "PayInvoice",
+		"module":      "telegram",
+		"func":        "balanceHandler",
 		"path":        "/balance",
 		"amount":      balance,
 		"user":        usrStr,

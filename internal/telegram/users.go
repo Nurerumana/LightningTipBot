@@ -88,7 +88,15 @@ func (bot *TipBot) GetUserBalance(user *lnbits.User) (amount int64, err error) {
 	}
 	// msat to sat
 	amount = int64(wallet.Balance) / 1000
-	log.Debugf("[GetUserBalance] %s's balance: %d sat\n", GetUserStr(user.Telegram), amount)
+	log.WithFields(log.Fields{
+		"module":      "telegram",
+		"func":        "GetUserBalance",
+		"user":        GetUserStr(user.Telegram),
+		"user_id":     user.ID,
+		"wallet_id":   user.Wallet.ID,
+		"telegram_id": user.Telegram.ID,
+		"amount":      amount},
+	).Debugf("updated user balance")
 
 	// update user balance in cache
 	bot.Cache.Set(

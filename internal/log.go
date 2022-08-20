@@ -2,6 +2,7 @@ package internal
 
 import (
 	log "github.com/sirupsen/logrus"
+	"go.elastic.co/ecslogrus"
 	"gopkg.in/natefinch/lumberjack.v2"
 	"io"
 )
@@ -9,17 +10,11 @@ import (
 func init() {
 	stdoutLogger := log.New()
 	customFormatter := new(log.TextFormatter)
-	customFormatter.TimestampFormat = "2006-01-02 15:04:05"
 	customFormatter.FullTimestamp = true
 	stdoutLogger.SetFormatter(customFormatter)
 
 	log.SetLevel(log.DebugLevel)
-	log.SetFormatter(&log.JSONFormatter{
-		FieldMap: log.FieldMap{
-			log.FieldKeyTime: "@timestamp",
-			log.FieldKeyMsg:  "message",
-		},
-	})
+	log.SetFormatter(&ecslogrus.Formatter{})
 
 	log.SetOutput(io.MultiWriter(stdoutLogger.Out, &lumberjack.Logger{
 		Filename:   "out.log",

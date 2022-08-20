@@ -117,6 +117,7 @@ func (bot *TipBot) invoiceHandler(ctx intercept.Context) (intercept.Context, err
 
 	logfields := log.Fields{
 		"module":      "telegram",
+		"func":        "invoiceHandler",
 		"path":        "/invoice",
 		"user":        GetUserStr(user.Telegram),
 		"user_id":     user.ID,
@@ -159,7 +160,7 @@ func (bot *TipBot) invoiceHandler(ctx intercept.Context) (intercept.Context, err
 		log.Errorln(errmsg)
 		return ctx, err
 	}
-
+	logfields["invoice"] = invoice.PaymentRequest
 	// create qr code
 	qr, err := qrcode.Encode(invoice.PaymentRequest, qrcode.Medium, 256)
 	if err != nil {

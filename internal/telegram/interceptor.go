@@ -208,7 +208,7 @@ func (bot TipBot) logMessageInterceptor(ctx intercept.Context) (intercept.Contex
 				"module":      "telegram",
 				"func":        "logMessageInterceptor",
 				"path":        ctx.Message().Text,
-				"user_id":     GetUserStr(ctx.Message().Sender),
+				"user":        GetUserStr(ctx.Message().Sender),
 				"data":        logString,
 				"telegram_id": ctx.Sender().ID}).Infof("intercepting message")
 		} else if ctx.Message().Photo != nil {
@@ -216,7 +216,7 @@ func (bot TipBot) logMessageInterceptor(ctx intercept.Context) (intercept.Contex
 				"module":      "telegram",
 				"func":        "logMessageInterceptor",
 				"path":        ctx.Message().Text,
-				"user_id":     GetUserStr(ctx.Message().Sender),
+				"user":        GetUserStr(ctx.Message().Sender),
 				"data":        fmt.Sprintf("[%s:%d %s:%d] %s", ctx.Message().Chat.Title, ctx.Message().Chat.ID, GetUserStr(ctx.Message().Sender), ctx.Message().Sender.ID, photoTag),
 				"telegram_id": ctx.Sender().ID}).Infof("intercepting photo message")
 		}
@@ -226,7 +226,7 @@ func (bot TipBot) logMessageInterceptor(ctx intercept.Context) (intercept.Contex
 			"module":      "telegram",
 			"func":        "logMessageInterceptor",
 			"path":        ctx.Message().Text,
-			"user_id":     GetUserStr(ctx.Message().Sender),
+			"user":        GetUserStr(ctx.Message().Sender),
 			"data":        fmt.Sprintf("[Callback %s:%d] Data: %s", GetUserStr(ctx.Callback().Sender), ctx.Callback().Sender.ID, ctx.Callback().Data),
 			"telegram_id": ctx.Sender().ID}).Infof("intercepting callback")
 		return ctx, nil
