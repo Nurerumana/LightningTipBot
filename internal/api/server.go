@@ -57,7 +57,10 @@ func (w *Server) AppendRoute(path string, handler func(http.ResponseWriter, *htt
 }
 
 func NotFoundHandler(writer http.ResponseWriter, err error) {
-	log.Errorln(err)
+	log.WithFields(log.Fields{
+		"module": "api",
+		"func":   "NotFoundHandler",
+		"error":  err.Error()}).Errorln("Returning Http 404")
 	// return 404 on any error
 	http.Error(writer, "404 page not found", http.StatusNotFound)
 }

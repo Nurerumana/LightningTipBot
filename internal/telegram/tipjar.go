@@ -153,7 +153,6 @@ func (bot TipBot) makeQueryTipjar(ctx intercept.Context) (*InlineTipjar, error) 
 			bot.inlineQueryReplyWithError(ctx, TranslateUser(ctx, "inlineQueryTipjarTitle"), fmt.Sprintf(TranslateUser(ctx, "inlineQueryTipjarDescription"), bot.Telegram.Me.Username))
 			return nil, err
 		case errors.BalanceToLowError:
-			log.Errorf(err.Error())
 			bot.inlineQueryReplyWithError(ctx, TranslateUser(ctx, "inlineSendBalanceLowMessage"), fmt.Sprintf(TranslateUser(ctx, "inlineQueryTipjarDescription"), bot.Telegram.Me.Username))
 			return nil, err
 		}
@@ -220,7 +219,16 @@ func (bot TipBot) handleInlineTipjarQuery(ctx intercept.Context) (intercept.Cont
 		results[i].SetResultID(inlineTipjar.ID)
 
 		bot.Cache.Set(inlineTipjar.ID, inlineTipjar, &store.Options{Expiration: 5 * time.Minute})
-		log.Infof("[tipjar] %s created inline tipjar %s: %d sat (%d per user)", GetUserStr(inlineTipjar.To.Telegram), inlineTipjar.ID, inlineTipjar.Amount, inlineTipjar.PerUserAmount)
+		log.WithFields(log.Fields{
+			"module":         "telegram-tipjar",
+			"func":           "handleInlineTipjarQuery",
+			"to_user":        GetUserStr(inlineTipjar.To.Telegram),
+			"to_user_id":     inlineTipjar.To.ID,
+			"to_telegram_id": inlineTipjar.To.Telegram.ID,
+			"to_wallet_id":   inlineTipjar.To.Wallet.ID,
+			"amount":         inlineTipjar.PerUserAmount,
+			"data":           fmt.Sprintf("[tipjar] %s created inline tipjar %s: %d sat (%d per user)", GetUserStr(inlineTipjar.To.Telegram), inlineTipjar.ID, inlineTipjar.Amount, inlineTipjar.PerUserAmount)}).
+			Infof("created tipjar")
 	}
 
 	err = bot.Telegram.Answer(q, &tb.QueryResponse{
@@ -229,7 +237,9 @@ func (bot TipBot) handleInlineTipjarQuery(ctx intercept.Context) (intercept.Cont
 		IsPersonal: true,
 	})
 	if err != nil {
-		log.Errorln(err)
+		log.WithFields(log.Fields{
+			"module": "telegram-tipjar",
+			"func":   "handleInlineTipjarQuery"}).Errorln("could not answer query")
 		return ctx, err
 	}
 	return ctx, nil
