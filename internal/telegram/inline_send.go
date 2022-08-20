@@ -229,27 +229,24 @@ func (bot *TipBot) acceptInlineSendHandler(ctx intercept.Context) (intercept.Con
 	_, exists := bot.UserExists(to.Telegram)
 	if !exists {
 		log.WithFields(log.Fields{
-			"module":       "inline_send",
-			"func":         "acceptInlineSendHandler",
-			"to_user":      toUserStr,
-			"to_user_id":   to.ID,
-			"to_wallet_id": to.Wallet.ID,
-			"user":         fromUserStr,
-			"user_id":      fromUser.ID,
-			"wallet_id":    fromUser.Wallet.ID},
+			"module":     "inline_send",
+			"func":       "acceptInlineSendHandler",
+			"to_user":    toUserStr,
+			"to_user_id": to.ID,
+			"user":       fromUserStr,
+			"user_id":    fromUser.ID,
+			"wallet_id":  fromUser.Wallet.ID},
 		).Infof("User has no wallet.")
 		to, err = bot.CreateWalletForTelegramUser(to.Telegram)
 		if err != nil {
 			log.WithFields(log.Fields{
-				"module":       "inline_send",
-				"func":         "acceptInlineSendHandler",
-				"to_user":      toUserStr,
-				"to_user_id":   to.ID,
-				"to_wallet_id": to.Wallet.ID,
-				"user":         fromUserStr,
-				"user_id":      fromUser.ID,
-				"wallet_id":    fromUser.Wallet.ID,
-				"error":        err.Error()},
+				"module":    "inline_send",
+				"func":      "acceptInlineSendHandler",
+				"to_user":   toUserStr,
+				"user":      fromUserStr,
+				"user_id":   fromUser.ID,
+				"wallet_id": fromUser.Wallet.ID,
+				"error":     err.Error()},
 			).Errorln("Could not create wallet for user")
 			return ctx, err
 		}
