@@ -203,7 +203,15 @@ func (bot *TipBot) registerNodeHandler(ctx intercept.Context) (intercept.Context
 			},
 		)
 		if err != nil {
-			log.Errorf("[registerNodeHandler] Could not add user %s's %s node: %s", GetUserStr(user.Telegram), getInvoiceParams.Status, err.Error())
+			log.WithFields(log.Fields{
+				"module":    "telegram",
+				"func":      "registerNodeHandler",
+				"user":      GetUserStr(user.Telegram),
+				"user_id":   user.ID,
+				"wallet_id": user.Wallet.ID,
+				"backend":   user.Settings.Node.NodeType,
+				"error":     err.Error(),
+				"status":    getInvoiceParams.Status}).Errorf("Could not add user %s's %s node: %s", GetUserStr(user.Telegram), getInvoiceParams.Status, err.Error())
 			bot.tryEditMessage(check_message, errorCouldNotAddNodeMessage)
 			return ctx, err
 		}
@@ -248,7 +256,13 @@ func (bot *TipBot) registerNodeHandler(ctx intercept.Context) (intercept.Context
 	}
 	bot.tryEditMessage(check_message, fmt.Sprintf("%s\n\n%s", node_info_str, nodeAddedMessage))
 
-	log.Infof("[node:add] Added node of user %s backend %s", GetUserStr(user.Telegram), user.Settings.Node.NodeType)
+	log.WithFields(log.Fields{
+		"module":    "telegram",
+		"func":      "registerNodeHandler",
+		"user":      GetUserStr(user.Telegram),
+		"user_id":   user.ID,
+		"wallet_id": user.Wallet.ID,
+		"backend":   user.Settings.Node.NodeType}).Infof("Added node")
 	return ctx, nil
 }
 

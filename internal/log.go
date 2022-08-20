@@ -20,7 +20,6 @@ func init() {
 			log.FieldKeyMsg:  "message",
 		},
 	})
-	log.SetLevel(log.TraceLevel)
 
 	log.SetOutput(io.MultiWriter(stdoutLogger.Out, &lumberjack.Logger{
 		Filename:   "out.log",
