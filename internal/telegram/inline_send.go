@@ -72,12 +72,17 @@ func (bot TipBot) handleInlineSendQuery(ctx intercept.Context) (intercept.Contex
 	balance, err := bot.GetUserBalanceCached(fromUser)
 	if err != nil {
 		errmsg := fmt.Sprintf("could not get balance of user %s", fromUserStr)
-		log.Errorln(errmsg)
+		log.WithFields(log.Fields{
+			"module": "telegram",
+			"func":   "handleInlineSendQuery"}).Errorln(errmsg)
 		return ctx, err
 	}
 	// check if fromUser has balance
 	if balance < amount {
-		log.Errorf("Balance of user %s too low", fromUserStr)
+		log.WithFields(log.Fields{
+			"module": "telegram",
+			"func":   "handleInlineSendQuery",
+			"user":   fromUserStr}).Errorf("Balance too low")
 		bot.inlineQueryReplyWithError(ctx, TranslateUser(ctx, "inlineSendBalanceLowMessage"), fmt.Sprintf(TranslateUser(ctx, "inlineQuerySendDescription"), bot.Telegram.Me.Username))
 		return ctx, errors.Create(errors.InvalidAmountError)
 	}

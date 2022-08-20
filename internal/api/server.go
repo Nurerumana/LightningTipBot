@@ -33,7 +33,7 @@ func NewServer(address string) *Server {
 	apiServer.router = mux.NewRouter()
 	apiServer.httpServer.Handler = apiServer.router
 	go apiServer.httpServer.ListenAndServe()
-	log.Infof("[API] Server started at %s", address)
+	log.WithFields(log.Fields{"module": "api"}).Infof("Server started at %s", address)
 	return apiServer
 }
 
@@ -44,13 +44,13 @@ func (w *Server) PathPrefix(path string, handler http.Handler) {
 	w.router.PathPrefix(path).Handler(handler)
 }
 func (w *Server) AppendAuthorizedRoute(path string, authType AuthType, database *gorm.DB, handler func(http.ResponseWriter, *http.Request), methods ...string) {
-	r := w.router.HandleFunc(path, LoggingMiddleware("API", AuthorizationMiddleware(database, authType, handler)))
+	r := w.router.HandleFunc(path, LoggingMiddleware(AuthorizationMiddleware(database, authType, handler)))
 	if len(methods) > 0 {
 		r.Methods(methods...)
 	}
 }
 func (w *Server) AppendRoute(path string, handler func(http.ResponseWriter, *http.Request), methods ...string) {
-	r := w.router.HandleFunc(path, LoggingMiddleware("API", handler))
+	r := w.router.HandleFunc(path, LoggingMiddleware(handler))
 	if len(methods) > 0 {
 		r.Methods(methods...)
 	}

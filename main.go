@@ -1,6 +1,8 @@
 package main
 
 import (
+	"gopkg.in/natefinch/lumberjack.v2"
+	"io"
 	"net/http"
 	"runtime/debug"
 
@@ -11,7 +13,6 @@ import (
 	"github.com/LightningTipBot/LightningTipBot/internal/lndhub"
 	"github.com/LightningTipBot/LightningTipBot/internal/lnurl"
 	"github.com/LightningTipBot/LightningTipBot/internal/runtime/mutex"
-
 	_ "net/http/pprof"
 
 	tb "gopkg.in/lightningtipbot/telebot.v3"
@@ -24,11 +25,27 @@ import (
 
 // setLogger will initialize the log format
 func setLogger() {
-	log.SetLevel(log.DebugLevel)
+	stdoutLogger := log.New()
 	customFormatter := new(log.TextFormatter)
 	customFormatter.TimestampFormat = "2006-01-02 15:04:05"
 	customFormatter.FullTimestamp = true
-	log.SetFormatter(customFormatter)
+	stdoutLogger.SetFormatter(customFormatter)
+	log.SetLevel(log.DebugLevel)
+	log.SetFormatter(&log.JSONFormatter{
+		FieldMap: log.FieldMap{
+			log.FieldKeyTime: "@timestamp",
+			log.FieldKeyMsg:  "message",
+		},
+	})
+
+	log.SetOutput(io.MultiWriter(stdoutLogger.Out, &lumberjack.Logger{
+		Filename:   "out.log",
+		MaxSize:    1, // megabytes
+		MaxBackups: 3,
+		MaxAge:     28,
+		Compress:   true}))
+
+	//log.SetFormatter(customFormatter)
 }
 
 func main() {
