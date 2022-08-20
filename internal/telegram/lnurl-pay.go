@@ -196,7 +196,14 @@ func (bot *TipBot) lnurlPayHandlerSend(ctx intercept.Context) (intercept.Context
 		if len(response2.Reason) > 0 {
 			error_reason = response2.Reason
 		}
-		log.Errorf("[lnurlPayHandlerSend] Error in LNURLPayValues: %s", error_reason)
+		log.WithFields(log.Fields{
+			"module":      "telegram",
+			"func":        "lnurlPayHandlerSend",
+			"user":        GetUserStr(user.Telegram),
+			"user_id":     user.ID,
+			"wallet_id":   user.Wallet.ID,
+			"telegram_id": user.Telegram.ID,
+			"error":       error_reason}).Error("Error in LNURLPayValues")
 		bot.tryEditMessage(statusMsg, fmt.Sprintf(Translate(ctx, "lnurlPaymentFailed"), error_reason))
 		return ctx, fmt.Errorf("error in LNURLPayValues: %s", error_reason)
 	}

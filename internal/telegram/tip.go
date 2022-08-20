@@ -87,7 +87,14 @@ func (bot *TipBot) tipHandler(ctx intercept.Context) (intercept.Context, error) 
 	fromUserStr := GetUserStr(from.Telegram)
 
 	if _, exists := bot.UserExists(to.Telegram); !exists {
-		log.Infof("[/tip] User %s has no wallet.", toUserStr)
+		log.WithFields(log.Fields{
+			"module":      "telegram",
+			"func":        "tipHandler",
+			"to_user":     to.ID,
+			"user":        fromUserStr,
+			"user_id":     from.ID,
+			"wallet_id":   from.Wallet.ID,
+			"telegram_id": from.Telegram.ID}).Infof("[/tip] User %s has no wallet.", toUserStr)
 		to, err = bot.CreateWalletForTelegramUser(to.Telegram)
 		if err != nil {
 			errmsg := fmt.Errorf("[/tip] Error: Could not create wallet for %s", toUserStr)
@@ -122,7 +129,16 @@ func (bot *TipBot) tipHandler(ctx intercept.Context) (intercept.Context, error) 
 	// update tooltip if necessary
 	messageHasTip := tipTooltipHandler(m, bot, amount, to.Initialized)
 
-	log.Infof("[💸 tip] Tip from %s to %s (%d sat).", fromUserStr, toUserStr, amount)
+	log.WithFields(log.Fields{
+		"module":      "tip",
+		"func":        "tipHandler",
+		"to_user":     toUserStr,
+		"user":        fromUserStr,
+		"user_id":     user.ID,
+		"wallet_id":   user.Wallet.ID,
+		"amount":      amount,
+		"telegram_id": user.Telegram.ID,
+		"error":       err}).Info("created Tip")
 
 	// notify users
 	bot.trySendMessage(from.Telegram, fmt.Sprintf(i18n.Translate(from.Telegram.LanguageCode, "tipSentMessage"), amount, toUserStrMd))

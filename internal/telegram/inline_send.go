@@ -163,7 +163,13 @@ func (bot TipBot) handleInlineSendQuery(ctx intercept.Context) (intercept.Contex
 
 	})
 	if err != nil {
-		log.Errorln(err)
+		log.WithFields(log.Fields{
+			"module":      "telegram",
+			"func":        "handleInlineSendQuery",
+			"user":        fromUserStr,
+			"user_id":     fromUser.ID,
+			"wallet_id":   fromUser.Wallet.ID,
+			"telegram_id": fromUser.Telegram.ID}).Errorln(err)
 		return ctx, err
 	}
 	return ctx, nil

@@ -299,8 +299,16 @@ func CheckInvoice(params CheckInvoiceParams) (CheckInvoiceParams, error) {
 		return params, nil
 
 	case LNBitsParams:
-		log.Debugf("[CheckInvoice] LNBits invoice %s at %s", base64.StdEncoding.EncodeToString(params.Hash), backend.Host)
-		log.Debug("Getting ", backend.Host+"/api/v1/payments/"+string(params.Hash))
+		log.WithFields(log.Fields{
+			"module":  "satdress",
+			"func":    "CheckInvoice",
+			"invoice": base64.StdEncoding.EncodeToString(params.Hash),
+			"host":    backend.Host}).Debugf("LNBits invoice")
+		log.WithFields(log.Fields{
+			"module":  "satdress",
+			"func":    "CheckInvoice",
+			"invoice": base64.StdEncoding.EncodeToString(params.Hash),
+			"host":    backend.Host + "/api/v1/payments/" + string(params.Hash)}).Debug("Fetching GET")
 		req, err := http.NewRequest("GET", backend.Host+"/api/v1/payments/"+string(params.Hash), nil)
 		if err != nil {
 			return CheckInvoiceParams{}, err
