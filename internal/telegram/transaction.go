@@ -80,7 +80,7 @@ func (t *Transaction) Send() (success bool, err error) {
 	if tx.Error != nil {
 		log.WithFields(log.Fields{
 			"module":       "telegram",
-			"func":         "tipHandler",
+			"func":         "SendTransaction",
 			"user":         t.FromUser,
 			"user_id":      t.From.ID,
 			"wallet_id":    t.From.Wallet.ID,
