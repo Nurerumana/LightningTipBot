@@ -191,8 +191,13 @@ func (bot *TipBot) acceptInlineSendHandler(ctx intercept.Context) (intercept.Con
 
 	fromUser := inlineSend.From
 	if !inlineSend.Active {
-		log.Errorf("[acceptInlineSendHandler] inline send not active anymore")
-		return ctx, errors.Create(errors.NotActiveError)
+		err = errors.Create(errors.NotActiveError)
+		log.WithFields(log.Fields{
+			"module": "inline_send",
+			"func":   "acceptInlineSendHandler",
+			"error":  err.Error()},
+		).Errorf("inline send not active anymore")
+		return ctx, err
 	}
 
 	defer inlineSend.Set(inlineSend, bot.Bunt)
@@ -223,16 +228,25 @@ func (bot *TipBot) acceptInlineSendHandler(ctx intercept.Context) (intercept.Con
 	// check if user exists and create a wallet if not
 	_, exists := bot.UserExists(to.Telegram)
 	if !exists {
-		log.Infof("[sendInline] User %s has no wallet.", toUserStr)
+		log.WithFields(log.Fields{
+			"module":       "inline_send",
+			"func":         "acceptInlineSendHandler",
+			"to_user":      toUserStr,
+			"to_user_id":   to.ID,
+			"to_wallet_id": to.Wallet.ID,
+			"user":         fromUserStr,
+			"user_id":      fromUser.ID,
+			"wallet_id":    fromUser.Wallet.ID},
+		).Infof("User has no wallet.")
 		to, err = bot.CreateWalletForTelegramUser(to.Telegram)
 		if err != nil {
 			log.WithFields(log.Fields{
-				"module":       "faucet",
-				"func":         "acceptInlineFaucetHandler",
-				"to_user":      GetUserStr(to.Telegram),
+				"module":       "inline_send",
+				"func":         "acceptInlineSendHandler",
+				"to_user":      toUserStr,
 				"to_user_id":   to.ID,
 				"to_wallet_id": to.Wallet.ID,
-				"user":         GetUserStr(fromUser.Telegram),
+				"user":         fromUserStr,
 				"user_id":      fromUser.ID,
 				"wallet_id":    fromUser.Wallet.ID,
 				"error":        err.Error()},
@@ -248,14 +262,41 @@ func (bot *TipBot) acceptInlineSendHandler(ctx intercept.Context) (intercept.Con
 	t := NewTransaction(bot, fromUser, to, amount, TransactionType("inline send"))
 	t.Memo = transactionMemo
 	success, err := t.Send()
-	if !success {
-		errMsg := fmt.Sprintf("[sendInline] Transaction failed: %s", err.Error())
-		log.Errorln(errMsg)
-		bot.tryEditMessage(c, i18n.Translate(inlineSend.LanguageCode, "inlineSendFailedMessage"), &tb.ReplyMarkup{})
-		return ctx, errors.Create(errors.UnknownError)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"module":       "inline_send",
+			"func":         "acceptInlineSendHandler",
+			"to_user":      toUserStr,
+			"to_user_id":   to.ID,
+			"to_wallet_id": to.Wallet.ID,
+			"user":         fromUserStr,
+			"user_id":      fromUser.ID,
+			"wallet_id":    fromUser.Wallet.ID,
+			"amount":       amount,
+			"error":        err.Error()},
+		).Errorln("inline send failed")
 	}
-
-	log.Infof("[💸 sendInline] Send from %s to %s (%d sat).", fromUserStr, toUserStr, amount)
+	if !success {
+		err = errors.Create(errors.UnknownError)
+		log.WithFields(log.Fields{
+			"module": "inline_send",
+			"func":   "acceptInlineSendHandler",
+			"error":  err.Error()},
+		).Errorln("transaction failed")
+		bot.tryEditMessage(c, i18n.Translate(inlineSend.LanguageCode, "inlineSendFailedMessage"), &tb.ReplyMarkup{})
+		return ctx, err
+	}
+	log.WithFields(log.Fields{
+		"module":       "inline_send",
+		"func":         "acceptInlineSendHandler",
+		"to_user":      toUserStr,
+		"to_user_id":   to.ID,
+		"to_wallet_id": to.Wallet.ID,
+		"user":         fromUserStr,
+		"user_id":      fromUser.ID,
+		"wallet_id":    fromUser.Wallet.ID,
+		"amount":       amount},
+	).Infof("Success")
 
 	inlineSend.Message = fmt.Sprintf("%s", fmt.Sprintf(i18n.Translate(inlineSend.LanguageCode, "inlineSendUpdateMessageAccept"), amount, fromUserStrMd, toUserStrMd))
 	memo := inlineSend.Memo
@@ -269,10 +310,7 @@ func (bot *TipBot) acceptInlineSendHandler(ctx intercept.Context) (intercept.Con
 	// notify users
 	bot.trySendMessage(to.Telegram, fmt.Sprintf(i18n.Translate(to.Telegram.LanguageCode, "sendReceivedMessage"), fromUserStrMd, amount))
 	bot.trySendMessage(fromUser.Telegram, fmt.Sprintf(i18n.Translate(fromUser.Telegram.LanguageCode, "sendSentMessage"), amount, toUserStrMd))
-	if err != nil {
-		errmsg := fmt.Errorf("[sendInline] Error: Send message to %s: %s", toUserStr, err)
-		log.Warnln(errmsg)
-	}
+
 	return ctx, nil
 }
 
@@ -284,7 +322,11 @@ func (bot *TipBot) cancelInlineSendHandler(ctx intercept.Context) (intercept.Con
 	// immediatelly set intransaction to block duplicate calls
 	sn, err := tx.Get(tx, bot.Bunt)
 	if err != nil {
-		log.Errorf("[cancelInlineSendHandler] %s", err.Error())
+		log.WithFields(log.Fields{
+			"module": "inline_send",
+			"func":   "cancelInlineSendHandler",
+			"error":  err.Error()},
+		).Errorf("could not cancel")
 		return ctx, err
 	}
 	inlineSend := sn.(*InlineSend)
