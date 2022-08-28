@@ -77,8 +77,16 @@ func (bot *TipBot) GetUserBalance(user *lnbits.User) (amount int64, err error) {
 
 	wallet, err := bot.Client.Info(*user.Wallet)
 	if err != nil {
-		errmsg := fmt.Sprintf("[GetUserBalance] Error: Couldn't fetch user %s's info from LNbits: %s", GetUserStr(user.Telegram), err.Error())
-		log.Errorln(errmsg)
+		log.WithFields(log.Fields{
+			"module":      "telegram",
+			"func":        "GetUserBalance",
+			"user":        GetUserStr(user.Telegram),
+			"user_id":     user.ID,
+			"wallet_id":   user.Wallet.ID,
+			"telegram_id": user.Telegram.ID,
+			"amount":      amount,
+			"error":       err.Error()},
+		).Debugf("Couldn't fetch user balance form LNbits")
 		return
 	}
 	user.Wallet.Balance = wallet.Balance

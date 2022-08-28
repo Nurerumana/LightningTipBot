@@ -96,7 +96,7 @@ func (bot TipBot) donationHandler(ctx intercept.Context) (intercept.Context, err
 			"user_id":     user.ID,
 			"amount":      amount,
 			"wallet_id":   user.Wallet.ID,
-			"error":       err}).Errorln("donation failed")
+			"error":       err.Error()}).Errorln("donation failed")
 		bot.tryEditMessage(msg, Translate(ctx, "donationErrorMessage"))
 		return ctx, err
 	}

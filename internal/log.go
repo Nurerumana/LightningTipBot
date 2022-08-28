@@ -22,6 +22,7 @@ func init() {
 		Level:      log.DebugLevel,
 		Formatter:  &ecslogrus.Formatter{},
 	})
+	log.SetFormatter(customFormatter)
 	if err != nil {
 		panic(err)
 	}
