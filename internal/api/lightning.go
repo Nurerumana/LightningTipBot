@@ -5,10 +5,12 @@ import (
 	log "github.com/sirupsen/logrus"
 	"net/http"
 
+	"fmt"
 	"github.com/LightningTipBot/LightningTipBot/internal"
 	"github.com/LightningTipBot/LightningTipBot/internal/lnbits"
 	"github.com/LightningTipBot/LightningTipBot/internal/telegram"
 	"github.com/gorilla/mux"
+	"io"
 )
 
 type Service struct {
@@ -159,4 +161,63 @@ func (s Service) InvoiceStatus(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(payment)
+}
+
+type InvoiceStream struct {
+	CheckingID  string `json:"checking_id"`
+	Pending     bool   `json:"pending"`
+	Amount      int    `json:"amount"`
+	Fee         int    `json:"fee"`
+	Memo        string `json:"memo"`
+	Time        int    `json:"time"`
+	Bolt11      string `json:"bolt11"`
+	Preimage    string `json:"preimage"`
+	PaymentHash string `json:"payment_hash"`
+	Extra       struct {
+	} `json:"extra"`
+	WalletID      string      `json:"wallet_id"`
+	Webhook       string      `json:"webhook"`
+	WebhookStatus interface{} `json:"webhook_status"`
+}
+
+func (s Service) InvoiceStream(w http.ResponseWriter, r *http.Request) {
+	user := telegram.LoadUser(r.Context())
+
+	req, err := http.NewRequest("GET", fmt.Sprintf("%s/api/v1/payments/sse", internal.Configuration.Lnbits.Url), nil)
+	if err != nil {
+		log.Fatal("Error creating HTTP request: ", err.Error())
+	}
+	req.Header.Set("X-Api-Key", user.Wallet.Inkey)
+	client := http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Fatal("Error making HTTP request: ", err.Error())
+	}
+
+	// Read the response header
+	fmt.Println("Response: Content-length:", resp.Header.Get("Content-length"))
+
+	bytesRead := 0
+	buf := make([]byte, 64)
+	flusher, ok := w.(http.Flusher)
+	if !ok {
+		http.Error(w, "Streaming unsupported!", http.StatusInternalServerError)
+		return
+	}
+	// Read the response body
+	for {
+		n, err := resp.Body.Read(buf)
+		bytesRead += n
+
+		if err == io.EOF {
+			break
+		}
+
+		if err != nil {
+			log.Fatal("Error reading HTTP response: ", err.Error())
+		}
+		w.Write(buf)
+		flusher.Flush()
+	}
+
 }
