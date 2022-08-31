@@ -14,7 +14,14 @@ var Configuration = struct {
 	Telegram TelegramConfiguration `yaml:"telegram"`
 	Database DatabaseConfiguration `yaml:"database"`
 	Lnbits   LnbitsConfiguration   `yaml:"lnbits"`
+	Generate GenerateConfiguration `yaml:"generate"`
 }{}
+
+type GenerateConfiguration struct {
+	DalleKey   string `yaml:"dalle_key"`
+	DallePrice int64  `yaml:"dalle_price"`
+	Worker     int    `yaml:"worker"`
+}
 
 type SocksConfiguration struct {
 	Host     string `yaml:"host"`
@@ -30,6 +37,7 @@ type BotConfiguration struct {
 	LNURLHostName  string              `yaml:"lnurl_public_host_name"`
 	LNURLHostUrl   *url.URL            `yaml:"-"`
 	LNURLSendImage bool                `yaml:"lnurl_image"`
+	AdminAPIHost   string              `yaml:"admin_api_host"`
 }
 
 type TelegramConfiguration struct {

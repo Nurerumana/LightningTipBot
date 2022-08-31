@@ -3,7 +3,9 @@ package telegram
 import (
 	"context"
 	"fmt"
+	"strings"
 
+	"github.com/LightningTipBot/LightningTipBot/internal"
 	"github.com/LightningTipBot/LightningTipBot/internal/lnbits"
 	log "github.com/sirupsen/logrus"
 	tb "gopkg.in/lightningtipbot/telebot.v3"
@@ -11,16 +13,18 @@ import (
 
 // we can't use space in the label of buttons, because string splitting will mess everything up.
 const (
-	MainMenuCommandSend    = "💸 Send"
+	MainMenuCommandWebApp  = "⤵️ Recv"
 	MainMenuCommandBalance = "Balance"
 	MainMenuCommandInvoice = "⚡️ Invoice"
 	MainMenuCommandHelp    = "📖 Help"
+	MainMenuCommandSend    = "⤴️ Send"
 	SendMenuCommandEnter   = "👤 Enter"
 )
 
 var (
 	mainMenu           = &tb.ReplyMarkup{ResizeKeyboard: true}
 	btnHelpMainMenu    = mainMenu.Text(MainMenuCommandHelp)
+	btnWebAppMainMenu  = mainMenu.Text(MainMenuCommandWebApp)
 	btnSendMainMenu    = mainMenu.Text(MainMenuCommandSend)
 	btnBalanceMainMenu = mainMenu.Text(MainMenuCommandBalance)
 	btnInvoiceMainMenu = mainMenu.Text(MainMenuCommandInvoice)
@@ -31,9 +35,10 @@ var (
 )
 
 func init() {
+	btnBalanceMainMenu = mainMenu.Text(MainMenuCommandBalance)
 	mainMenu.Reply(
 		mainMenu.Row(btnBalanceMainMenu),
-		mainMenu.Row(btnInvoiceMainMenu, btnSendMainMenu, btnHelpMainMenu),
+		mainMenu.Row(btnInvoiceMainMenu, btnWebAppMainMenu, btnSendMainMenu, btnHelpMainMenu),
 	)
 }
 
@@ -56,6 +61,21 @@ func buttonWrapper(buttons []tb.Btn, markup *tb.ReplyMarkup, length int) []tb.Ro
 	}
 	rows = append(rows, markup.Row(buttons...))
 	return rows
+}
+
+// appendWebAppLinkToButton adds a WebApp object to a Button with the user's webapp page
+func (bot *TipBot) appendWebAppLinkToButton(btn *tb.Btn, user *lnbits.User) {
+	var url string
+	if len(user.Telegram.Username) > 0 {
+		url = fmt.Sprintf("%s/app/@%s", internal.Configuration.Bot.LNURLHostName, user.Telegram.Username)
+	} else {
+		url = fmt.Sprintf("%s/app/@%s", internal.Configuration.Bot.LNURLHostName, user.AnonIDSha256)
+	}
+	if strings.HasPrefix(url, "https://") {
+		// prevent adding a link if not https is used, otherwise
+		// Telegram returns an error and does not show the keyboard
+		btn.WebApp = &tb.WebAppInfo{Url: url}
+	}
 }
 
 // mainMenuBalanceButtonUpdate updates the balance button in the mainMenu
@@ -81,11 +101,13 @@ func (bot *TipBot) mainMenuBalanceButtonUpdate(to int64) {
 				"telegram_id": user.Telegram.ID}).Tracef("user %s balance %d sat", GetUserStr(user.Telegram), amount)
 			MainMenuCommandBalance := fmt.Sprintf("%s %d sat", MainMenuCommandBalance, amount)
 			btnBalanceMainMenu = mainMenu.Text(MainMenuCommandBalance)
-			mainMenu.Reply(
-				mainMenu.Row(btnBalanceMainMenu),
-				mainMenu.Row(btnInvoiceMainMenu, btnSendMainMenu, btnHelpMainMenu),
-			)
 		}
+
+		bot.appendWebAppLinkToButton(&btnWebAppMainMenu, user)
+		mainMenu.Reply(
+			mainMenu.Row(btnBalanceMainMenu),
+			mainMenu.Row(btnInvoiceMainMenu, btnWebAppMainMenu, btnSendMainMenu, btnHelpMainMenu),
+		)
 	}
 }
 
@@ -110,7 +132,7 @@ func (bot *TipBot) makeContactsButtons(ctx context.Context) []tb.Btn {
 	// get all contacts and add them to the buttons
 	for i, r := range records {
 		log.Tracef("[makeContactsButtons] toNames[%d] = %s (id=%d)", i, r.ToUser, r.ID)
-		sendToButtons = append(sendToButtons, tb.Btn{Text: fmt.Sprintf("%s", r.ToUser)})
+		sendToButtons = append(sendToButtons, tb.Btn{Text: r.ToUser})
 	}
 
 	// add the "enter a username" button to the end

@@ -28,10 +28,24 @@ type AuthType struct {
 }
 
 var AuthTypeBasic = AuthType{Type: "Basic"}
-var AuthTypeBearerBase64 = AuthType{Type: "Basic", Decoder: base64.StdEncoding.DecodeString}
+var AuthTypeBearerBase64 = AuthType{Type: "Bearer", Decoder: base64.StdEncoding.DecodeString}
+var AuthTypeNone = AuthType{}
 
-func AuthorizationMiddleware(database *gorm.DB, authType AuthType, next http.HandlerFunc) http.HandlerFunc {
+// invoice key or admin key requirement
+type AccessKeyType struct {
+	Type string
+}
+
+var AccessKeyTypeInvoice = AccessKeyType{Type: "invoice"}
+var AccessKeyTypeAdmin = AccessKeyType{Type: "admin"}
+var AccessKeyTypeNone = AccessKeyType{Type: "none"} // no authorization required
+
+func AuthorizationMiddleware(database *gorm.DB, authType AuthType, accessType AccessKeyType, next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		if accessType.Type == "none" {
+			next.ServeHTTP(w, r)
+			return
+		}
 		auth := r.Header.Get("Authorization")
 		// check if the user is banned
 		if auth == "" {
@@ -52,26 +66,24 @@ func AuthorizationMiddleware(database *gorm.DB, authType AuthType, next http.Han
 		}
 		// then we check whether the "normal" password provided is in the database (it should be not if the user is banned)
 		user := &lnbits.User{}
-		tx := database.Where("wallet_adminkey = ? COLLATE NOCASE", password).First(user)
+		var tx *gorm.DB
+		if accessType.Type == "admin" {
+			tx = database.Where("wallet_adminkey = ? COLLATE NOCASE", password).First(user)
+		} else if accessType.Type == "invoice" {
+			tx = database.Where("wallet_inkey = ? COLLATE NOCASE", password).First(user)
+		} else {
+			log.WithFields(log.Fields{"module": "api", "func": "AuthorizationMiddleware", "user": password, "error": tx.Error}).
+				Warnf("route without access type")
+			w.WriteHeader(401)
+			return
+		}
 		if tx.Error != nil {
 			log.WithFields(log.Fields{"module": "api", "func": "AuthorizationMiddleware", "user": password, "error": tx.Error}).
-				Warnf("could not get wallet admin key")
-
-			tx = database.Where("wallet_inkey = ? COLLATE NOCASE", password).First(user)
-			if tx.Error != nil {
-				log.WithFields(log.Fields{"module": "api", "func": "AuthorizationMiddleware", "user": password, "error": tx.Error}).
-					Warnf("need admin key to pay invoice")
-
-				return
-			}
-			if r.URL.Path == "/api/v1/payinvoice" {
-				log.WithFields(log.Fields{"module": "api", "func": "AuthorizationMiddleware", "user": password, "error": tx.Error}).
-					Warnf("need admin key to pay invoice")
-
-				return
-			}
+				Warnf("could not load access key")
+			w.WriteHeader(401)
+			return
 		}
-		log.WithFields(log.Fields{"module": "api", "func": "AuthorizationMiddleware", "user": telegram.GetUserStr(user.Telegram), "error": tx.Error}).
+		log.WithFields(log.Fields{"module": "api", "func": "AuthorizationMiddleware","path":fmt.Sprintf("%s %s%s",r.Method, r.URL.Path, r.URL.RawQuery), "user": telegram.GetUserStr(user.Telegram)}).
 			Debugf("Loaded Api user")
 		r = r.WithContext(context.WithValue(r.Context(), "user", user))
 		next.ServeHTTP(w, r)
@@ -87,7 +99,7 @@ func parseAuth(authType AuthType, auth string) (username, password string, ok bo
 			return
 		}
 		if authType.Decoder != nil {
-			c, err := base64.StdEncoding.DecodeString(auth[len(prefix):])
+			c, err := authType.Decoder(auth[len(prefix):])
 			if err != nil {
 				return
 			}

@@ -141,7 +141,7 @@ func (w *Server) receive(writer http.ResponseWriter, request *http.Request) {
 					"amount":      amount}).Errorln("invalid event type")
 				return
 			}
-			c.Function(txInvoiceEvent)
+			go c.Function(txInvoiceEvent)
 			return
 		}
 	}

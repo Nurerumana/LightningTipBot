@@ -279,7 +279,7 @@ func (bot *TipBot) invHandler(ctx intercept.Context) (intercept.Context, error) 
 
 	var amount int64
 	if amount_str, err := getArgumentFromCommand(m.Text, 2); err == nil {
-		amount, err = getAmount(amount_str)
+		amount, err = GetAmount(amount_str)
 		if err != nil {
 			return ctx, err
 		}
@@ -521,7 +521,7 @@ func (bot *TipBot) satdressProxyHandler(ctx intercept.Context) (intercept.Contex
 
 	var amount int64
 	if amount_str, err := getArgumentFromCommand(m.Text, 2); err == nil {
-		amount, err = getAmount(amount_str)
+		amount, err = GetAmount(amount_str)
 		if err != nil {
 			return ctx, err
 		}

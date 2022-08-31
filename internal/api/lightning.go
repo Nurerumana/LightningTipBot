@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	log "github.com/sirupsen/logrus"
 	"net/http"
+	"time"
 
 	"fmt"
 	"github.com/LightningTipBot/LightningTipBot/internal"
@@ -11,6 +12,7 @@ import (
 	"github.com/LightningTipBot/LightningTipBot/internal/telegram"
 	"github.com/gorilla/mux"
 	"io"
+	"github.com/r3labs/sse"
 )
 
 type Service struct {
@@ -182,42 +184,22 @@ type InvoiceStream struct {
 
 func (s Service) InvoiceStream(w http.ResponseWriter, r *http.Request) {
 	user := telegram.LoadUser(r.Context())
-
-	req, err := http.NewRequest("GET", fmt.Sprintf("%s/api/v1/payments/sse", internal.Configuration.Lnbits.Url), nil)
-	if err != nil {
-		log.Fatal("Error creating HTTP request: ", err.Error())
-	}
-	req.Header.Set("X-Api-Key", user.Wallet.Inkey)
-	client := http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		log.Fatal("Error making HTTP request: ", err.Error())
-	}
-
-	// Read the response header
-	fmt.Println("Response: Content-length:", resp.Header.Get("Content-length"))
-
-	bytesRead := 0
-	buf := make([]byte, 64)
-	flusher, ok := w.(http.Flusher)
-	if !ok {
+	w.Header().Set("Content-Type", "application/stream+json")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("Connection", "keep-alive")
+	flusher, err := w.(http.Flusher)
+	if !err {
 		http.Error(w, "Streaming unsupported!", http.StatusInternalServerError)
 		return
 	}
-	// Read the response body
-	for {
-		n, err := resp.Body.Read(buf)
-		bytesRead += n
 
-		if err == io.EOF {
-			break
+	client := sse.NewClient(fmt.Sprintf("%s/api/v1/payments/sse", internal.Configuration.Lnbits.Url))
+	client.Headers = map[string]string{"X-Api-Key": user.Wallet.Inkey}
+	client.Subscribe("", func(msg *sse.Event) {
+		if msg.Data != nil {
+			fmt.Fprintf(w, "%s\n", string(msg.Data))
+			flusher.Flush()
 		}
-
-		if err != nil {
-			log.Fatal("Error reading HTTP response: ", err.Error())
-		}
-		w.Write(buf)
-		flusher.Flush()
-	}
-
+	})
+	time.Sleep(time.Second * 5)
 }

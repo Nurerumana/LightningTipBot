@@ -124,7 +124,8 @@ advancedMessage = """%s
 */faucet* 🚰 Erzeuge einen Zapfhahn: `/faucet <gesamt> <pro_user>`
 */tipjar* 🍯 Erzeuge eine Spendendose: `/tipjar <gesamt> <pro_user>`
 */group* 🎟 Tickets für Gruppenchats: `/group add <meine_gruppe> [<ticket_preis>]`
-*/shop* 🛍 Durchsuche shops: `/shop` oder `/shop <user/shop_id>`"""
+*/shop* 🛍 Durchsuche Shops: `/shop` oder `/shop <user/shop_id>`
+*/generate* 🎆 Generiere Bilder mit DALLE-2: `/generate <beschreibung>`"""
 
 # GENERIC
 enterAmountRangeMessage        = """💯 Gebe Betrag zwuschen %d und %d sat ein."""
@@ -260,11 +261,22 @@ lnurlWithdrawSuccess             = """✅ Abhebung angefordert."""
 
 walletConnectMessage = """🔗 *Verbinde dein Wallet*
 
-⚠️ Teile diese URL und den QR code mit niemandem! Jeder, der darauf Zugriff hat, hat auch Zugriff auf dein Konto.
+⚠️ Teile diese URL und den QR code mit niemandem! Jeder, der darauf Zugriff hat, hat auch Zugriff auf dein Konto. Nutze /api für deine API keys.
 
 - *BlueWallet:* Drücke *New wallet*, *Import wallet*, *Scan or import a file*, und scanne den QR Code.
 - *Zeus:* Kopiere die URL unten, drücke *Add a new node*, *Import* (die URL), *Save Node Config*."""
 couldNotLinkMessage = """🚫 Konnte dein Wallet nicht verbinden. Bitte versuche es später noch einmal."""
+linkHiddenMessage               = """🔍 Link versteckt. Gebe /link ein um ihn wieder zu sehen."""
+
+# API
+
+walletConnectMessage = """🔗 *Deine API Keys*
+
+⚠️ Teile diese Key mit niemandem! Jeder, der darauf Zugriff hat, hat auch Zugriff auf dein Konto. Nutze /link um dein Wallet zu verbinden.
+
+- *Admin key:* `%s`
+- *Invoice key:* `%s`"""
+apiHiddenMessage               = """🔍 Keys versteckt. Gebe /api ein um sie wieder zu sehen."""
 
 # FAUCET
 

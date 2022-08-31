@@ -127,12 +127,15 @@ advancedMessage = """%s
 */faucet* 🚰 Create a faucet: `/faucet <capacity> <per_user>`
 */tipjar* 🍯 Create a tipjar: `/tipjar <capacity> <per_user>`
 */group* 🎟 Create group tickets: `/group add <mygroup> [<ticket_price>]`
-*/shop* 🛍 Browse shops: `/shop` or `/shop <user/shop_id>`"""
+*/shop* 🛍 Browse shops: `/shop` or `/shop <user/shop_id>`
+*/generate* 🎆 Generate DALLE-2 images: `/generate <prompt>`"""
+
 
 # GENERIC
 enterAmountRangeMessage        = """💯 Enter an amount between %d and %d sat."""
 enterAmountMessage             = """💯 Enter an amount."""
 enterUserMessage               = """👤 Enter a user."""
+enterTextMessage               = """⌨️ Enter text."""
 errorReasonMessage             = """🚫 Error: %s"""
 
 # START
@@ -264,12 +267,22 @@ lnurlWithdrawSuccess             = """✅ Withdrawal requested."""
 
 walletConnectMessage = """🔗 *Link your wallet*
 
-⚠️ Never share the URL or the QR code with anyone or they will be able to access your funds.
+⚠️ Never share the URL or the QR code with anyone or they will be able to access your funds. Use /api for your API keys.
 
 - *BlueWallet:* Press *New wallet*, *Import wallet*, *Scan or import a file*, and scan the QR code.
 - *Zeus:* Copy the URL below, press *Add a new node*, select *LNDHub* as Node interface, enter the URL, *Save Node Config*."""
 couldNotLinkMessage             = """🚫 Couldn't link your wallet. Please try again later."""
 linkHiddenMessage               = """🔍 Link hidden. Enter /link to see it again."""
+
+# API
+
+apiConnectMessage = """🔗 *Your API keys*
+
+⚠️ Never share these keys with anyone or they will be able to access your funds. Use /link to link your wallet.
+
+- *Admin key:* `%s`
+- *Invoice key:* `%s`"""
+apiHiddenMessage               = """🔍 Keys hidden. Enter /api to see them again."""
 
 # FAUCET
 
@@ -384,3 +397,8 @@ To join a group, talk to %s and write in a private message `/join <mygroup>`.
 📖 *Usage:*
 *For admins (in group chat):* `/group add <group_name> [<ticket_price>]`\nExample: `/group add TheBestBitcoinGroup 1000`
 *For users (in private chat):* `/join <group_name>`\nExample: `/join TheBestBitcoinGroup`"""
+
+# DALLE GENERATE
+generateDalleHelpMessage        = """Generate images using OpenAI DALLE 2.\nUsage: `/generate <prompt>`\nPrice: 1000 sat"""
+generateDallePayInvoiceMessage  = """Pay this invoice to generate four images 👇"""
+generateDalleGeneratingMessage  = """Your images are being generated. Please wait..."""

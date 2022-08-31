@@ -17,6 +17,7 @@ require (
 	github.com/nicksnyder/go-i18n/v2 v2.1.2
 	github.com/orcaman/concurrent-map v1.0.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
+	github.com/r3labs/sse v0.0.0-20210224172625-26fe804710bc
 	github.com/sirupsen/logrus v1.8.1
 	github.com/skip2/go-qrcode v0.0.0-20200617195104-da1b6568686e
 	github.com/tidwall/buntdb v1.2.7
@@ -25,7 +26,6 @@ require (
 	golang.org/x/net v0.0.0-20211015210444-4f30a5c0130f
 	golang.org/x/text v0.3.7
 	golang.org/x/time v0.0.0-20210220033141-f8bda1e9f3ba
-	gopkg.in/lightningtipbot/telebot.v3 v3.0.0-20220326213923-f323bb71ac8e
 	gorm.io/driver/sqlite v1.1.4
 	gorm.io/gorm v1.21.12
 )
@@ -56,6 +56,7 @@ require (
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.0.1 // indirect
 	github.com/decred/dcrd/lru v1.0.0 // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
+	github.com/dillonstreator/dalle v0.0.0-20220826164958-b15c236ceadc // indirect
 	github.com/go-errors/errors v1.0.1 // indirect
 	github.com/go-redis/redis/v8 v8.8.2 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
@@ -74,7 +75,7 @@ require (
 	github.com/miekg/dns v1.1.43 // indirect
 	github.com/nbd-wtf/ln-decodepay v1.5.1 // indirect
 	github.com/pegasus-kv/thrift v0.13.0 // indirect
-	github.com/spf13/cast v1.3.1 // indirect
+	github.com/spf13/cast v1.5.0 // indirect
 	github.com/tidwall/btree v0.6.1 // indirect
 	github.com/tidwall/grect v0.1.3 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
@@ -89,10 +90,12 @@ require (
 	golang.org/x/sys v0.0.0-20220817070843-5a390386f1f2 // indirect
 	golang.org/x/term v0.0.0-20201126162022-7de9c90e9dd1 // indirect
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
+	gopkg.in/cenkalti/backoff.v1 v1.1.0 // indirect
+	gopkg.in/lightningtipbot/telebot.v3 v3.0.0-20220828121412-0dea11ecc6dd // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0 // indirect
 	gopkg.in/tomb.v2 v2.0.0-20161208151619-d5d1b5820637 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	k8s.io/apimachinery v0.0.0-20191123233150-4c4803ed55e3 // indirect
 )
 
-// replace gopkg.in/lightningtipbot/telebot.v2 => ../telebot
+// replace gopkg.in/lightningtipbot/telebot.v3 => ../telebot
