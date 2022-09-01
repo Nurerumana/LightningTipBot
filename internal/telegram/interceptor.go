@@ -20,6 +20,7 @@ import (
 )
 
 type Interceptor struct {
+	Fields  log.Fields
 	Before  []intercept.Func
 	After   []intercept.Func
 	OnDefer []intercept.Func

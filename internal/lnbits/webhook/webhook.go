@@ -32,7 +32,7 @@ type Server struct {
 
 type Webhook struct {
 	CheckingID    string      `json:"checking_id"`
-	Pending       bool        `json:"pending"`
+	Pending       int         `json:"pending"`
 	Amount        int64       `json:"amount"`
 	Fee           int64       `json:"fee"`
 	Memo          string      `json:"memo"`
@@ -48,7 +48,7 @@ type Webhook struct {
 
 func NewServer(bot *telegram.TipBot) *Server {
 	srv := &http.Server{
-		Addr:         internal.Configuration.Lnbits.WebhookServerUrl.Host,
+		Addr:         "0.0.0.0:5588",
 		WriteTimeout: 15 * time.Second,
 		ReadTimeout:  15 * time.Second,
 	}
@@ -111,7 +111,7 @@ func (w *Server) receive(writer http.ResponseWriter, request *http.Request) {
 	log.WithFields(log.Fields{
 		"module":      "webhook",
 		"func":        "receive",
-		"user":        telegram.GetUserStr(user.Telegram),
+		"user":        user.GetUserStr(),
 		"telegram_id": user.Telegram.ID,
 		"amount":      amount}).Infoln(fmt.Sprintf("User received invoice"))
 
@@ -124,7 +124,7 @@ func (w *Server) receive(writer http.ResponseWriter, request *http.Request) {
 		log.WithFields(log.Fields{
 			"module":      "webhook",
 			"func":        "receive",
-			"user":        telegram.GetUserStr(user.Telegram),
+			"user":        user.GetUserStr(),
 			"telegram_id": user.Telegram.ID,
 			"error":       err.Error(),
 			"amount":      amount}).Errorln(err)
@@ -135,7 +135,7 @@ func (w *Server) receive(writer http.ResponseWriter, request *http.Request) {
 				log.WithFields(log.Fields{
 					"module":      "webhook",
 					"func":        "receive",
-					"user":        telegram.GetUserStr(user.Telegram),
+					"user":        user.GetUserStr(),
 					"telegram_id": user.Telegram.ID,
 					"error":       err.Error(),
 					"amount":      amount}).Errorln("invalid event type")
@@ -152,7 +152,7 @@ func (w *Server) receive(writer http.ResponseWriter, request *http.Request) {
 		log.WithFields(log.Fields{
 			"module":      "webhook",
 			"func":        "receive",
-			"user":        telegram.GetUserStr(user.Telegram),
+			"user":        user.GetUserStr(),
 			"telegram_id": user.Telegram.ID,
 			"error":       err.Error(),
 			"amount":      amount}).Errorln("could not send fallback message")

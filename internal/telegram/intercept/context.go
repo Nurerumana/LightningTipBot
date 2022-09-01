@@ -22,6 +22,7 @@ type handlerInterceptor struct {
 	before  Chain
 	after   Chain
 	onDefer Chain
+	fields  log.Fields
 }
 type Chain []Func
 type Option func(*handlerInterceptor)
@@ -39,6 +40,11 @@ func WithAfter(chain ...Func) Option {
 func WithDefer(chain ...Func) Option {
 	return func(a *handlerInterceptor) {
 		a.onDefer = chain
+	}
+}
+func WithDefaultLogFields(f log.Fields) Option {
+	return func(a *handlerInterceptor) {
+		a.fields = f
 	}
 }
 
@@ -63,6 +69,9 @@ func WithHandler(handler Func, option ...Option) tb.HandlerFunc {
 	}
 	return func(c tb.Context) error {
 		h := Context{TeleContext: TeleContext{Context: c}, Context: context.Background()}
+		if len(hm.fields) > 0 {
+			h.Context = context.WithValue(h.Context, "fields", hm.fields)
+		}
 		h, err := intercept(h, hm.before)
 		if err != nil {
 			log.Traceln(err)

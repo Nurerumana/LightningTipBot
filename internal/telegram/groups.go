@@ -260,11 +260,11 @@ func (bot *TipBot) groupConfirmPayButtonHandler(ctx intercept.Context) (intercep
 		return ctx, errors.Create(errors.UserNoWalletError)
 	}
 
-	log.Infof("[/pay] Attempting %s's invoice %s (%d sat)", GetUserStr(user.Telegram), ticketEvent.ID, ticketEvent.Group.Ticket.Price)
+	log.Infof("[/pay] Attempting %s's invoice %s (%d sat)", user.GetUserStr(), ticketEvent.ID, ticketEvent.Group.Ticket.Price)
 	// // pay invoice
 	_, err = user.Wallet.Pay(lnbits.PaymentParams{Out: true, Bolt11: ticketEvent.Invoice.PaymentRequest}, bot.Client)
 	if err != nil {
-		errmsg := fmt.Sprintf("[/pay] Could not pay invoice of %s: %s", GetUserStr(user.Telegram), err)
+		errmsg := fmt.Sprintf("[/pay] Could not pay invoice of %s: %s", user.GetUserStr(), err)
 		err = fmt.Errorf(i18n.Translate(ticketEvent.LanguageCode, "invoiceUndefinedErrorMessage"))
 		bot.tryEditMessage(c, fmt.Sprintf(i18n.Translate(ticketEvent.LanguageCode, "invoicePaymentFailedMessage"), err.Error()), &tb.ReplyMarkup{})
 		log.Errorln(errmsg)

@@ -48,7 +48,7 @@ func (bot TipBot) registerHandlerWithInterceptor(h InterceptionWrapper) {
 		bot.handle(endpoint, intercept.WithHandler(h.Handler,
 			intercept.WithBefore(h.Interceptor.Before...),
 			intercept.WithAfter(h.Interceptor.After...),
-			intercept.WithDefer(h.Interceptor.OnDefer...)))
+			intercept.WithDefer(h.Interceptor.OnDefer...), intercept.WithDefaultLogFields(h.Interceptor.Fields)))
 	}
 }
 
@@ -90,6 +90,11 @@ func (bot TipBot) getHandler() []InterceptionWrapper {
 			Endpoints: []interface{}{"/start"},
 			Handler:   bot.startHandler,
 			Interceptor: &Interceptor{
+				Fields: log.Fields{
+					"module": "telegram",
+					"func":   "startHandler",
+					"path":   "/start",
+				},
 				Before: []intercept.Func{
 					bot.localizerInterceptor,
 					bot.logMessageInterceptor,
@@ -105,6 +110,11 @@ func (bot TipBot) getHandler() []InterceptionWrapper {
 			Endpoints: []interface{}{"/generate"},
 			Handler:   bot.generateImages,
 			Interceptor: &Interceptor{
+				Fields: log.Fields{
+					"module": "telegram",
+					"func":   "generateImages",
+					"path":   "/generate",
+				},
 				Before: []intercept.Func{
 					bot.requirePrivateChatInterceptor,
 					bot.localizerInterceptor,
@@ -121,6 +131,11 @@ func (bot TipBot) getHandler() []InterceptionWrapper {
 			Endpoints: []interface{}{"/tip", "/t", "/honk"},
 			Handler:   bot.tipHandler,
 			Interceptor: &Interceptor{
+				Fields: log.Fields{
+					"module": "telegram",
+					"func":   "tipHandler",
+					"path":   "/tip",
+				},
 				Before: []intercept.Func{
 					bot.localizerInterceptor,
 					bot.logMessageInterceptor,
@@ -137,6 +152,11 @@ func (bot TipBot) getHandler() []InterceptionWrapper {
 			Endpoints: []interface{}{"/pay"},
 			Handler:   bot.payHandler,
 			Interceptor: &Interceptor{
+				Fields: log.Fields{
+					"module": "telegram",
+					"func":   "payHandler",
+					"path":   "/pay",
+				},
 				Before: []intercept.Func{
 					bot.requirePrivateChatInterceptor,
 					bot.localizerInterceptor,
@@ -153,7 +173,11 @@ func (bot TipBot) getHandler() []InterceptionWrapper {
 			Endpoints: []interface{}{"/invoice", &btnInvoiceMainMenu},
 			Handler:   bot.invoiceHandler,
 			Interceptor: &Interceptor{
-
+				Fields: log.Fields{
+					"module": "telegram",
+					"func":   "invoiceHandler",
+					"path":   "/invoice",
+				},
 				Before: []intercept.Func{
 					bot.requirePrivateChatInterceptor,
 					bot.localizerInterceptor,
@@ -170,6 +194,11 @@ func (bot TipBot) getHandler() []InterceptionWrapper {
 			Endpoints: []interface{}{"/node"},
 			Handler:   bot.nodeHandler,
 			Interceptor: &Interceptor{
+				Fields: log.Fields{
+					"module": "telegram",
+					"func":   "nodeHandler",
+					"path":   "/node",
+				},
 				Before: []intercept.Func{
 					bot.requirePrivateChatInterceptor,
 					bot.localizerInterceptor,
@@ -186,7 +215,11 @@ func (bot TipBot) getHandler() []InterceptionWrapper {
 			Endpoints: []interface{}{&btnSatdressCheckInvoice},
 			Handler:   bot.satdressCheckInvoiceHandler,
 			Interceptor: &Interceptor{
-
+				Fields: log.Fields{
+					"module": "telegram",
+					"func":   "satdressCheckInvoiceHandler",
+					"path":   "btnSatdressCheckInvoice",
+				},
 				Before: []intercept.Func{
 					bot.localizerInterceptor,
 					bot.requireUserInterceptor,
@@ -202,7 +235,11 @@ func (bot TipBot) getHandler() []InterceptionWrapper {
 			Endpoints: []interface{}{"/shops"},
 			Handler:   bot.shopsHandler,
 			Interceptor: &Interceptor{
-
+				Fields: log.Fields{
+					"module": "telegram",
+					"func":   "shopsHandler",
+					"path":   "/shops",
+				},
 				Before: []intercept.Func{
 					bot.logMessageInterceptor,
 					bot.requireUserInterceptor,
@@ -217,7 +254,11 @@ func (bot TipBot) getHandler() []InterceptionWrapper {
 			Endpoints: []interface{}{"/shop"},
 			Handler:   bot.shopHandler,
 			Interceptor: &Interceptor{
-
+				Fields: log.Fields{
+					"module": "telegram",
+					"func":   "shopHandler",
+					"path":   "/shop",
+				},
 				Before: []intercept.Func{
 					bot.localizerInterceptor,
 					bot.logMessageInterceptor,
@@ -233,7 +274,11 @@ func (bot TipBot) getHandler() []InterceptionWrapper {
 			Endpoints: []interface{}{"/balance", &btnBalanceMainMenu},
 			Handler:   bot.balanceHandler,
 			Interceptor: &Interceptor{
-
+				Fields: log.Fields{
+					"module": "telegram",
+					"func":   "balanceHandler",
+					"path":   "/balance",
+				},
 				Before: []intercept.Func{
 					bot.requirePrivateChatInterceptor,
 					bot.localizerInterceptor,
@@ -250,7 +295,11 @@ func (bot TipBot) getHandler() []InterceptionWrapper {
 			Endpoints: []interface{}{"/send", &btnSendMenuEnter},
 			Handler:   bot.sendHandler,
 			Interceptor: &Interceptor{
-
+				Fields: log.Fields{
+					"module": "telegram",
+					"func":   "sendHandler",
+					"path":   "/send",
+				},
 				Before: []intercept.Func{
 					bot.localizerInterceptor,
 					bot.logMessageInterceptor,
@@ -267,7 +316,11 @@ func (bot TipBot) getHandler() []InterceptionWrapper {
 			Endpoints: []interface{}{&btnSendMainMenu},
 			Handler:   bot.keyboardSendHandler,
 			Interceptor: &Interceptor{
-
+				Fields: log.Fields{
+					"module": "telegram",
+					"func":   "keyboardSendHandler",
+					"path":   "btnSendMainMenu",
+				},
 				Before: []intercept.Func{
 					bot.localizerInterceptor,
 					bot.logMessageInterceptor,
@@ -303,6 +356,11 @@ func (bot TipBot) getHandler() []InterceptionWrapper {
 			Endpoints: []interface{}{"/transactions"},
 			Handler:   bot.transactionsHandler,
 			Interceptor: &Interceptor{
+				Fields: log.Fields{
+					"module": "telegram",
+					"func":   "transactionsHandler",
+					"path":   "/transactions",
+				},
 				Before: []intercept.Func{
 					bot.requirePrivateChatInterceptor,
 					bot.localizerInterceptor,
@@ -314,7 +372,11 @@ func (bot TipBot) getHandler() []InterceptionWrapper {
 			Endpoints: []interface{}{&btnLeftTransactionsButton},
 			Handler:   bot.transactionsScrollLeftHandler,
 			Interceptor: &Interceptor{
-
+				Fields: log.Fields{
+					"module": "telegram",
+					"func":   "transactionsScrollLeftHandler",
+					"path":   "btnLeftTransactionsButton",
+				},
 				Before: []intercept.Func{
 					bot.localizerInterceptor,
 					bot.loadUserInterceptor,
@@ -330,7 +392,11 @@ func (bot TipBot) getHandler() []InterceptionWrapper {
 			Endpoints: []interface{}{&btnRightTransactionsButton},
 			Handler:   bot.transactionsScrollRightHandler,
 			Interceptor: &Interceptor{
-
+				Fields: log.Fields{
+					"module": "telegram",
+					"func":   "transactionsScrollRightHandler",
+					"path":   "btnRightTransactionsButton",
+				},
 				Before: []intercept.Func{
 					bot.localizerInterceptor,
 					bot.loadUserInterceptor,
@@ -346,6 +412,11 @@ func (bot TipBot) getHandler() []InterceptionWrapper {
 			Endpoints: []interface{}{"/faucet", "/zapfhahn", "/kraan", "/grifo"},
 			Handler:   bot.faucetHandler,
 			Interceptor: &Interceptor{
+				Fields: log.Fields{
+					"module": "telegram",
+					"func":   "faucetHandler",
+					"path":   "/faucet",
+				},
 				Before: []intercept.Func{
 					bot.localizerInterceptor,
 					bot.logMessageInterceptor,
@@ -361,6 +432,11 @@ func (bot TipBot) getHandler() []InterceptionWrapper {
 			Endpoints: []interface{}{"/tipjar", "/spendendose"},
 			Handler:   bot.tipjarHandler,
 			Interceptor: &Interceptor{
+				Fields: log.Fields{
+					"module": "telegram",
+					"func":   "tipjarHandler",
+					"path":   "/tipjar",
+				},
 				Before: []intercept.Func{
 					bot.localizerInterceptor,
 					bot.logMessageInterceptor,
@@ -376,6 +452,11 @@ func (bot TipBot) getHandler() []InterceptionWrapper {
 			Endpoints: []interface{}{"/help", &btnHelpMainMenu},
 			Handler:   bot.helpHandler,
 			Interceptor: &Interceptor{
+				Fields: log.Fields{
+					"module": "telegram",
+					"func":   "helpHandler",
+					"path":   "/help",
+				},
 				Before: []intercept.Func{
 					bot.localizerInterceptor,
 					bot.logMessageInterceptor,
@@ -391,7 +472,11 @@ func (bot TipBot) getHandler() []InterceptionWrapper {
 			Endpoints: []interface{}{"/basics"},
 			Handler:   bot.basicsHandler,
 			Interceptor: &Interceptor{
-
+				Fields: log.Fields{
+					"module": "telegram",
+					"func":   "basicsHandler",
+					"path":   "/basics",
+				},
 				Before: []intercept.Func{
 					bot.localizerInterceptor,
 					bot.logMessageInterceptor,
@@ -407,7 +492,11 @@ func (bot TipBot) getHandler() []InterceptionWrapper {
 			Endpoints: []interface{}{"/donate"},
 			Handler:   bot.donationHandler,
 			Interceptor: &Interceptor{
-
+				Fields: log.Fields{
+					"module": "telegram",
+					"func":   "donationHandler",
+					"path":   "/donate",
+				},
 				Before: []intercept.Func{
 					bot.localizerInterceptor,
 					bot.logMessageInterceptor,
@@ -423,6 +512,11 @@ func (bot TipBot) getHandler() []InterceptionWrapper {
 			Endpoints: []interface{}{"/advanced"},
 			Handler:   bot.advancedHelpHandler,
 			Interceptor: &Interceptor{
+				Fields: log.Fields{
+					"module": "telegram",
+					"func":   "advancedHelpHandler",
+					"path":   "/advanced",
+				},
 				Before: []intercept.Func{
 					bot.requirePrivateChatInterceptor,
 					bot.localizerInterceptor,
@@ -439,6 +533,11 @@ func (bot TipBot) getHandler() []InterceptionWrapper {
 			Endpoints: []interface{}{"/link"},
 			Handler:   bot.lndhubHandler,
 			Interceptor: &Interceptor{
+				Fields: log.Fields{
+					"module": "telegram",
+					"func":   "lndhubHandler",
+					"path":   "/link",
+				},
 				Before: []intercept.Func{
 					bot.requirePrivateChatInterceptor,
 					bot.localizerInterceptor,
@@ -455,6 +554,11 @@ func (bot TipBot) getHandler() []InterceptionWrapper {
 			Endpoints: []interface{}{"/api"},
 			Handler:   bot.apiHandler,
 			Interceptor: &Interceptor{
+				Fields: log.Fields{
+					"module": "telegram",
+					"func":   "apiHandler",
+					"path":   "/api",
+				},
 				Before: []intercept.Func{
 					bot.requirePrivateChatInterceptor,
 					bot.localizerInterceptor,
@@ -471,6 +575,11 @@ func (bot TipBot) getHandler() []InterceptionWrapper {
 			Endpoints: []interface{}{"/lnurl"},
 			Handler:   bot.lnurlHandler,
 			Interceptor: &Interceptor{
+				Fields: log.Fields{
+					"module": "telegram",
+					"func":   "lnurlHandler",
+					"path":   "/lnurl",
+				},
 				Before: []intercept.Func{
 					bot.requirePrivateChatInterceptor,
 					bot.localizerInterceptor,
@@ -488,6 +597,11 @@ func (bot TipBot) getHandler() []InterceptionWrapper {
 			Endpoints: []interface{}{"/group"},
 			Handler:   bot.groupHandler,
 			Interceptor: &Interceptor{
+				Fields: log.Fields{
+					"module": "telegram",
+					"func":   "groupHandler",
+					"path":   "/group",
+				},
 				Before: []intercept.Func{
 					bot.localizerInterceptor,
 					bot.logMessageInterceptor,
@@ -503,7 +617,11 @@ func (bot TipBot) getHandler() []InterceptionWrapper {
 			Endpoints: []interface{}{"/join"},
 			Handler:   bot.groupRequestJoinHandler,
 			Interceptor: &Interceptor{
-
+				Fields: log.Fields{
+					"module": "telegram",
+					"func":   "groupRequestJoinHandler",
+					"path":   "/join",
+				},
 				Before: []intercept.Func{
 					bot.requirePrivateChatInterceptor,
 					bot.localizerInterceptor,
@@ -520,7 +638,11 @@ func (bot TipBot) getHandler() []InterceptionWrapper {
 			Endpoints: []interface{}{&btnPayTicket},
 			Handler:   bot.groupConfirmPayButtonHandler,
 			Interceptor: &Interceptor{
-
+				Fields: log.Fields{
+					"module": "telegram",
+					"func":   "groupConfirmPayButtonHandler",
+					"path":   "btnPayTicket",
+				},
 				Before: []intercept.Func{
 					bot.localizerInterceptor,
 					bot.requireUserInterceptor,
@@ -536,7 +658,11 @@ func (bot TipBot) getHandler() []InterceptionWrapper {
 			Endpoints: []interface{}{tb.OnPhoto},
 			Handler:   bot.photoHandler,
 			Interceptor: &Interceptor{
-
+				Fields: log.Fields{
+					"module": "telegram",
+					"func":   "photoHandler",
+					"path":   "<photo>",
+				},
 				Before: []intercept.Func{
 					bot.requirePrivateChatInterceptor,
 					bot.localizerInterceptor,
@@ -553,7 +679,11 @@ func (bot TipBot) getHandler() []InterceptionWrapper {
 			Endpoints: []interface{}{tb.OnDocument, tb.OnVideo, tb.OnAnimation, tb.OnVoice, tb.OnAudio, tb.OnSticker, tb.OnVideoNote},
 			Handler:   bot.fileHandler,
 			Interceptor: &Interceptor{
-
+				Fields: log.Fields{
+					"module": "telegram",
+					"func":   "fileHandler",
+					"path":   "<file>",
+				},
 				Before: []intercept.Func{
 					bot.requirePrivateChatInterceptor,
 					bot.logMessageInterceptor,
@@ -563,7 +693,11 @@ func (bot TipBot) getHandler() []InterceptionWrapper {
 			Endpoints: []interface{}{tb.OnText},
 			Handler:   bot.anyTextHandler,
 			Interceptor: &Interceptor{
-
+				Fields: log.Fields{
+					"module": "telegram",
+					"func":   "anyTextHandler",
+					"path":   "<text>",
+				},
 				Before: []intercept.Func{
 					bot.requirePrivateChatInterceptor, // Respond to any text only in private chat
 					bot.localizerInterceptor,
@@ -580,6 +714,11 @@ func (bot TipBot) getHandler() []InterceptionWrapper {
 			Endpoints: []interface{}{tb.OnQuery},
 			Handler:   bot.anyQueryHandler,
 			Interceptor: &Interceptor{
+				Fields: log.Fields{
+					"module": "telegram",
+					"func":   "anyQueryHandler",
+					"path":   "<query>",
+				},
 				Before: []intercept.Func{
 					bot.localizerInterceptor,
 					bot.requireUserInterceptor,
@@ -598,7 +737,11 @@ func (bot TipBot) getHandler() []InterceptionWrapper {
 			Endpoints: []interface{}{&btnPay},
 			Handler:   bot.confirmPayHandler,
 			Interceptor: &Interceptor{
-
+				Fields: log.Fields{
+					"module": "telegram",
+					"func":   "confirmPayHandler",
+					"path":   "btnPay",
+				},
 				Before: []intercept.Func{
 					bot.localizerInterceptor,
 					bot.requireUserInterceptor,
@@ -614,7 +757,11 @@ func (bot TipBot) getHandler() []InterceptionWrapper {
 			Endpoints: []interface{}{&btnCancelPay},
 			Handler:   bot.cancelPaymentHandler,
 			Interceptor: &Interceptor{
-
+				Fields: log.Fields{
+					"module": "telegram",
+					"func":   "cancelPaymentHandler",
+					"path":   "btnCancelPay",
+				},
 				Before: []intercept.Func{
 					bot.localizerInterceptor,
 					bot.requireUserInterceptor,
@@ -630,7 +777,11 @@ func (bot TipBot) getHandler() []InterceptionWrapper {
 			Endpoints: []interface{}{&btnSend},
 			Handler:   bot.confirmSendHandler,
 			Interceptor: &Interceptor{
-
+				Fields: log.Fields{
+					"module": "telegram",
+					"func":   "confirmSendHandler",
+					"path":   "btnSend",
+				},
 				Before: []intercept.Func{
 					bot.localizerInterceptor,
 					bot.requireUserInterceptor,
@@ -646,7 +797,11 @@ func (bot TipBot) getHandler() []InterceptionWrapper {
 			Endpoints: []interface{}{&btnCancelSend},
 			Handler:   bot.cancelSendHandler,
 			Interceptor: &Interceptor{
-
+				Fields: log.Fields{
+					"module": "telegram",
+					"func":   "cancelSendHandler",
+					"path":   "btnCancelSend",
+				},
 				Before: []intercept.Func{
 					bot.localizerInterceptor,
 					bot.requireUserInterceptor,
@@ -662,7 +817,11 @@ func (bot TipBot) getHandler() []InterceptionWrapper {
 			Endpoints: []interface{}{&btnAcceptInlineSend},
 			Handler:   bot.acceptInlineSendHandler,
 			Interceptor: &Interceptor{
-
+				Fields: log.Fields{
+					"module": "telegram",
+					"func":   "acceptInlineSendHandler",
+					"path":   "btnAcceptInlineSend",
+				},
 				Before: []intercept.Func{
 					bot.localizerInterceptor,
 					bot.loadUserInterceptor,
@@ -678,7 +837,11 @@ func (bot TipBot) getHandler() []InterceptionWrapper {
 			Endpoints: []interface{}{&btnCancelInlineSend},
 			Handler:   bot.cancelInlineSendHandler,
 			Interceptor: &Interceptor{
-
+				Fields: log.Fields{
+					"module": "telegram",
+					"func":   "cancelInlineSendHandler",
+					"path":   "btnCancelInlineSend",
+				},
 				Before: []intercept.Func{
 					bot.localizerInterceptor,
 					bot.requireUserInterceptor,
@@ -694,7 +857,11 @@ func (bot TipBot) getHandler() []InterceptionWrapper {
 			Endpoints: []interface{}{&btnAcceptInlineReceive},
 			Handler:   bot.acceptInlineReceiveHandler,
 			Interceptor: &Interceptor{
-
+				Fields: log.Fields{
+					"module": "telegram",
+					"func":   "acceptInlineReceiveHandler",
+					"path":   "btnAcceptInlineReceive",
+				},
 				Before: []intercept.Func{
 					bot.localizerInterceptor,
 					bot.loadUserInterceptor,
@@ -710,7 +877,11 @@ func (bot TipBot) getHandler() []InterceptionWrapper {
 			Endpoints: []interface{}{&btnCancelInlineReceive},
 			Handler:   bot.cancelInlineReceiveHandler,
 			Interceptor: &Interceptor{
-
+				Fields: log.Fields{
+					"module": "telegram",
+					"func":   "cancelInlineReceiveHandler",
+					"path":   "btnCancelInlineReceive",
+				},
 				Before: []intercept.Func{
 					bot.localizerInterceptor,
 					bot.requireUserInterceptor,
@@ -726,7 +897,11 @@ func (bot TipBot) getHandler() []InterceptionWrapper {
 			Endpoints: []interface{}{&btnAcceptInlineFaucet},
 			Handler:   bot.acceptInlineFaucetHandler,
 			Interceptor: &Interceptor{
-
+				Fields: log.Fields{
+					"module": "telegram",
+					"func":   "acceptInlineFaucetHandler",
+					"path":   "btnAcceptInlineFaucet",
+				},
 				Before: []intercept.Func{
 					bot.singletonCallbackInterceptor,
 					bot.localizerInterceptor,
@@ -744,7 +919,11 @@ func (bot TipBot) getHandler() []InterceptionWrapper {
 			Endpoints: []interface{}{&btnCancelInlineFaucet},
 			Handler:   bot.cancelInlineFaucetHandler,
 			Interceptor: &Interceptor{
-
+				Fields: log.Fields{
+					"module": "telegram",
+					"func":   "cancelInlineFaucetHandler",
+					"path":   "btnCancelInlineFaucet",
+				},
 				Before: []intercept.Func{
 					bot.localizerInterceptor,
 					bot.requireUserInterceptor,
@@ -760,7 +939,11 @@ func (bot TipBot) getHandler() []InterceptionWrapper {
 			Endpoints: []interface{}{&btnAcceptInlineTipjar},
 			Handler:   bot.acceptInlineTipjarHandler,
 			Interceptor: &Interceptor{
-
+				Fields: log.Fields{
+					"module": "telegram",
+					"func":   "acceptInlineTipjarHandler",
+					"path":   "btnAcceptInlineTipjar",
+				},
 				Before: []intercept.Func{
 					bot.localizerInterceptor,
 					bot.requireUserInterceptor,
@@ -776,7 +959,11 @@ func (bot TipBot) getHandler() []InterceptionWrapper {
 			Endpoints: []interface{}{&btnCancelInlineTipjar},
 			Handler:   bot.cancelInlineTipjarHandler,
 			Interceptor: &Interceptor{
-
+				Fields: log.Fields{
+					"module": "telegram",
+					"func":   "cancelInlineTipjarHandler",
+					"path":   "btnCancelInlineTipjar",
+				},
 				Before: []intercept.Func{
 					bot.localizerInterceptor,
 					bot.requireUserInterceptor,
@@ -792,7 +979,11 @@ func (bot TipBot) getHandler() []InterceptionWrapper {
 			Endpoints: []interface{}{&btnWithdraw},
 			Handler:   bot.confirmWithdrawHandler,
 			Interceptor: &Interceptor{
-
+				Fields: log.Fields{
+					"module": "telegram",
+					"func":   "confirmWithdrawHandler",
+					"path":   "btnWithdraw",
+				},
 				Before: []intercept.Func{
 					bot.localizerInterceptor,
 					bot.requireUserInterceptor,
@@ -808,7 +999,11 @@ func (bot TipBot) getHandler() []InterceptionWrapper {
 			Endpoints: []interface{}{&btnCancelWithdraw},
 			Handler:   bot.cancelWithdrawHandler,
 			Interceptor: &Interceptor{
-
+				Fields: log.Fields{
+					"module": "telegram",
+					"func":   "cancelWithdrawHandler",
+					"path":   "btnCancelWithdraw",
+				},
 				Before: []intercept.Func{
 					bot.localizerInterceptor,
 					bot.requireUserInterceptor,
@@ -824,7 +1019,11 @@ func (bot TipBot) getHandler() []InterceptionWrapper {
 			Endpoints: []interface{}{&btnAuth},
 			Handler:   bot.confirmLnurlAuthHandler,
 			Interceptor: &Interceptor{
-
+				Fields: log.Fields{
+					"module": "telegram",
+					"func":   "confirmLnurlAuthHandler",
+					"path":   "btnAuth",
+				},
 				Before: []intercept.Func{
 					bot.localizerInterceptor,
 					bot.requireUserInterceptor,
@@ -840,7 +1039,11 @@ func (bot TipBot) getHandler() []InterceptionWrapper {
 			Endpoints: []interface{}{&btnCancelAuth},
 			Handler:   bot.cancelLnurlAuthHandler,
 			Interceptor: &Interceptor{
-
+				Fields: log.Fields{
+					"module": "telegram",
+					"func":   "cancelLnurlAuthHandler",
+					"path":   "btnCancelAuth",
+				},
 				Before: []intercept.Func{
 					bot.localizerInterceptor,
 					bot.requireUserInterceptor,
@@ -856,7 +1059,11 @@ func (bot TipBot) getHandler() []InterceptionWrapper {
 			Endpoints: []interface{}{&shopNewShopButton},
 			Handler:   bot.shopNewShopHandler,
 			Interceptor: &Interceptor{
-
+				Fields: log.Fields{
+					"module": "telegram",
+					"func":   "shopNewShopHandler",
+					"path":   "shopNewShopButton",
+				},
 				Before: []intercept.Func{
 					bot.localizerInterceptor,
 					bot.loadUserInterceptor,
@@ -871,7 +1078,11 @@ func (bot TipBot) getHandler() []InterceptionWrapper {
 			Endpoints: []interface{}{&shopAddItemButton},
 			Handler:   bot.shopNewItemHandler,
 			Interceptor: &Interceptor{
-
+				Fields: log.Fields{
+					"module": "telegram",
+					"func":   "shopNewItemHandler",
+					"path":   "shopAddItemButton",
+				},
 				Before: []intercept.Func{
 					bot.localizerInterceptor,
 					bot.loadUserInterceptor,
@@ -886,7 +1097,11 @@ func (bot TipBot) getHandler() []InterceptionWrapper {
 			Endpoints: []interface{}{&shopBuyitemButton},
 			Handler:   bot.shopGetItemFilesHandler,
 			Interceptor: &Interceptor{
-
+				Fields: log.Fields{
+					"module": "telegram",
+					"func":   "shopGetItemFilesHandler",
+					"path":   "shopBuyitemButton",
+				},
 				Before: []intercept.Func{
 					bot.localizerInterceptor,
 					bot.loadUserInterceptor,
@@ -901,7 +1116,11 @@ func (bot TipBot) getHandler() []InterceptionWrapper {
 			Endpoints: []interface{}{&shopNextitemButton},
 			Handler:   bot.shopNextItemButtonHandler,
 			Interceptor: &Interceptor{
-
+				Fields: log.Fields{
+					"module": "telegram",
+					"func":   "shopNextItemButtonHandler",
+					"path":   "shopNextitemButton",
+				},
 				Before: []intercept.Func{
 					bot.localizerInterceptor,
 					bot.loadUserInterceptor,
@@ -916,7 +1135,11 @@ func (bot TipBot) getHandler() []InterceptionWrapper {
 			Endpoints: []interface{}{&browseShopButton},
 			Handler:   bot.shopsBrowser,
 			Interceptor: &Interceptor{
-
+				Fields: log.Fields{
+					"module": "telegram",
+					"func":   "shopsBrowser",
+					"path":   "browseShopButton",
+				},
 				Before: []intercept.Func{
 					bot.localizerInterceptor,
 					bot.loadUserInterceptor,
@@ -931,7 +1154,11 @@ func (bot TipBot) getHandler() []InterceptionWrapper {
 			Endpoints: []interface{}{&shopSelectButton},
 			Handler:   bot.shopSelect,
 			Interceptor: &Interceptor{
-
+				Fields: log.Fields{
+					"module": "telegram",
+					"func":   "shopSelect",
+					"path":   "shopSelectButton",
+				},
 				Before: []intercept.Func{
 					bot.localizerInterceptor,
 					bot.loadUserInterceptor,
@@ -947,7 +1174,11 @@ func (bot TipBot) getHandler() []InterceptionWrapper {
 			Endpoints: []interface{}{&shopDeleteShopButton},
 			Handler:   bot.shopsDeleteShopBrowser,
 			Interceptor: &Interceptor{
-
+				Fields: log.Fields{
+					"module": "telegram",
+					"func":   "shopsDeleteShopBrowser",
+					"path":   "shopDeleteShopButton",
+				},
 				Before: []intercept.Func{
 					bot.localizerInterceptor,
 					bot.loadUserInterceptor,
@@ -963,7 +1194,11 @@ func (bot TipBot) getHandler() []InterceptionWrapper {
 			Endpoints: []interface{}{&shopDeleteSelectButton},
 			Handler:   bot.shopSelectDelete,
 			Interceptor: &Interceptor{
-
+				Fields: log.Fields{
+					"module": "telegram",
+					"func":   "shopSelectDelete",
+					"path":   "shopDeleteSelectButton",
+				},
 				Before: []intercept.Func{
 					bot.localizerInterceptor,
 					bot.loadUserInterceptor,
@@ -979,7 +1214,11 @@ func (bot TipBot) getHandler() []InterceptionWrapper {
 			Endpoints: []interface{}{&shopLinkShopButton},
 			Handler:   bot.shopsLinkShopBrowser,
 			Interceptor: &Interceptor{
-
+				Fields: log.Fields{
+					"module": "telegram",
+					"func":   "shopsLinkShopBrowser",
+					"path":   "shopLinkShopButton",
+				},
 				Before: []intercept.Func{
 					bot.localizerInterceptor,
 					bot.loadUserInterceptor,
@@ -995,7 +1234,11 @@ func (bot TipBot) getHandler() []InterceptionWrapper {
 			Endpoints: []interface{}{&shopLinkSelectButton},
 			Handler:   bot.shopSelectLink,
 			Interceptor: &Interceptor{
-
+				Fields: log.Fields{
+					"module": "telegram",
+					"func":   "shopSelectLink",
+					"path":   "shopLinkSelectButton",
+				},
 				Before: []intercept.Func{
 					bot.localizerInterceptor,
 					bot.loadUserInterceptor,
@@ -1011,7 +1254,11 @@ func (bot TipBot) getHandler() []InterceptionWrapper {
 			Endpoints: []interface{}{&shopRenameShopButton},
 			Handler:   bot.shopsRenameShopBrowser,
 			Interceptor: &Interceptor{
-
+				Fields: log.Fields{
+					"module": "telegram",
+					"func":   "shopsRenameShopBrowser",
+					"path":   "shopRenameShopButton",
+				},
 				Before: []intercept.Func{
 					bot.localizerInterceptor,
 					bot.loadUserInterceptor,
@@ -1027,7 +1274,11 @@ func (bot TipBot) getHandler() []InterceptionWrapper {
 			Endpoints: []interface{}{&shopRenameSelectButton},
 			Handler:   bot.shopSelectRename,
 			Interceptor: &Interceptor{
-
+				Fields: log.Fields{
+					"module": "telegram",
+					"func":   "shopSelectRename",
+					"path":   "shopRenameSelectButton",
+				},
 				Before: []intercept.Func{
 					bot.localizerInterceptor,
 					bot.loadUserInterceptor,
@@ -1043,7 +1294,11 @@ func (bot TipBot) getHandler() []InterceptionWrapper {
 			Endpoints: []interface{}{&shopSettingsButton},
 			Handler:   bot.shopSettingsHandler,
 			Interceptor: &Interceptor{
-
+				Fields: log.Fields{
+					"module": "telegram",
+					"func":   "shopSettingsHandler",
+					"path":   "shopSettingsButton",
+				},
 				Before: []intercept.Func{
 					bot.localizerInterceptor,
 					bot.loadUserInterceptor,
@@ -1059,7 +1314,11 @@ func (bot TipBot) getHandler() []InterceptionWrapper {
 			Endpoints: []interface{}{&shopDescriptionShopButton},
 			Handler:   bot.shopsDescriptionHandler,
 			Interceptor: &Interceptor{
-
+				Fields: log.Fields{
+					"module": "telegram",
+					"func":   "shopsDescriptionHandler",
+					"path":   "shopDescriptionShopButton",
+				},
 				Before: []intercept.Func{
 					bot.localizerInterceptor,
 					bot.loadUserInterceptor,
@@ -1075,7 +1334,11 @@ func (bot TipBot) getHandler() []InterceptionWrapper {
 			Endpoints: []interface{}{&shopResetShopButton},
 			Handler:   bot.shopsResetHandler,
 			Interceptor: &Interceptor{
-
+				Fields: log.Fields{
+					"module": "telegram",
+					"func":   "shopsResetHandler",
+					"path":   "shopResetShopButton",
+				},
 				Before: []intercept.Func{
 					bot.localizerInterceptor,
 					bot.loadUserInterceptor,
@@ -1090,7 +1353,11 @@ func (bot TipBot) getHandler() []InterceptionWrapper {
 			Endpoints: []interface{}{&shopResetShopAskButton},
 			Handler:   bot.shopsAskDeleteAllShopsHandler,
 			Interceptor: &Interceptor{
-
+				Fields: log.Fields{
+					"module": "telegram",
+					"func":   "shopsAskDeleteAllShopsHandler",
+					"path":   "shopResetShopAskButton",
+				},
 				Before: []intercept.Func{
 					bot.localizerInterceptor,
 					bot.loadUserInterceptor,
@@ -1105,7 +1372,11 @@ func (bot TipBot) getHandler() []InterceptionWrapper {
 			Endpoints: []interface{}{&shopPrevitemButton},
 			Handler:   bot.shopPrevItemButtonHandler,
 			Interceptor: &Interceptor{
-
+				Fields: log.Fields{
+					"module": "telegram",
+					"func":   "shopPrevItemButtonHandler",
+					"path":   "shopPrevitemButton",
+				},
 				Before: []intercept.Func{
 					bot.localizerInterceptor,
 					bot.loadUserInterceptor,
@@ -1120,7 +1391,11 @@ func (bot TipBot) getHandler() []InterceptionWrapper {
 			Endpoints: []interface{}{&shopShopsButton},
 			Handler:   bot.shopsHandlerCallback,
 			Interceptor: &Interceptor{
-
+				Fields: log.Fields{
+					"module": "telegram",
+					"func":   "shopsHandlerCallback",
+					"path":   "shopShopsButton",
+				},
 				Before: []intercept.Func{
 					bot.localizerInterceptor,
 					bot.loadUserInterceptor,
@@ -1136,7 +1411,11 @@ func (bot TipBot) getHandler() []InterceptionWrapper {
 			Endpoints: []interface{}{&shopItemSettingsButton},
 			Handler:   bot.shopItemSettingsHandler,
 			Interceptor: &Interceptor{
-
+				Fields: log.Fields{
+					"module": "telegram",
+					"func":   "shopItemSettingsHandler",
+					"path":   "shopItemSettingsButton",
+				},
 				Before: []intercept.Func{
 					bot.localizerInterceptor,
 					bot.loadUserInterceptor,
@@ -1151,7 +1430,11 @@ func (bot TipBot) getHandler() []InterceptionWrapper {
 			Endpoints: []interface{}{&shopItemSettingsBackButton},
 			Handler:   bot.displayShopItemHandler,
 			Interceptor: &Interceptor{
-
+				Fields: log.Fields{
+					"module": "telegram",
+					"func":   "displayShopItemHandler",
+					"path":   "shopItemSettingsBackButton",
+				},
 				Before: []intercept.Func{
 					bot.localizerInterceptor,
 					bot.loadUserInterceptor,
@@ -1166,7 +1449,11 @@ func (bot TipBot) getHandler() []InterceptionWrapper {
 			Endpoints: []interface{}{&shopItemDeleteButton},
 			Handler:   bot.shopItemDeleteHandler,
 			Interceptor: &Interceptor{
-
+				Fields: log.Fields{
+					"module": "telegram",
+					"func":   "shopItemDeleteHandler",
+					"path":   "shopItemDeleteButton",
+				},
 				Before: []intercept.Func{
 					bot.localizerInterceptor,
 					bot.loadUserInterceptor,
@@ -1181,7 +1468,11 @@ func (bot TipBot) getHandler() []InterceptionWrapper {
 			Endpoints: []interface{}{&shopItemPriceButton},
 			Handler:   bot.shopItemPriceHandler,
 			Interceptor: &Interceptor{
-
+				Fields: log.Fields{
+					"module": "telegram",
+					"func":   "shopItemPriceHandler",
+					"path":   "shopItemPriceButton",
+				},
 				Before: []intercept.Func{
 					bot.localizerInterceptor,
 					bot.loadUserInterceptor,
@@ -1196,7 +1487,11 @@ func (bot TipBot) getHandler() []InterceptionWrapper {
 			Endpoints: []interface{}{&shopItemTitleButton},
 			Handler:   bot.shopItemTitleHandler,
 			Interceptor: &Interceptor{
-
+				Fields: log.Fields{
+					"module": "telegram",
+					"func":   "shopItemTitleHandler",
+					"path":   "shopItemTitleButton",
+				},
 				Before: []intercept.Func{
 					bot.localizerInterceptor,
 					bot.loadUserInterceptor,
@@ -1211,7 +1506,11 @@ func (bot TipBot) getHandler() []InterceptionWrapper {
 			Endpoints: []interface{}{&shopItemAddFileButton},
 			Handler:   bot.shopItemAddItemHandler,
 			Interceptor: &Interceptor{
-
+				Fields: log.Fields{
+					"module": "telegram",
+					"func":   "shopItemAddItemHandler",
+					"path":   "shopItemAddFileButton",
+				},
 				Before: []intercept.Func{
 					bot.localizerInterceptor,
 					bot.loadUserInterceptor,
@@ -1226,7 +1525,11 @@ func (bot TipBot) getHandler() []InterceptionWrapper {
 			Endpoints: []interface{}{&shopItemBuyButton},
 			Handler:   bot.shopConfirmBuyHandler,
 			Interceptor: &Interceptor{
-
+				Fields: log.Fields{
+					"module": "telegram",
+					"func":   "shopConfirmBuyHandler",
+					"path":   "shopItemBuyButton",
+				},
 				Before: []intercept.Func{
 					bot.localizerInterceptor,
 					bot.loadUserInterceptor,
@@ -1241,7 +1544,11 @@ func (bot TipBot) getHandler() []InterceptionWrapper {
 			Endpoints: []interface{}{&shopItemCancelBuyButton},
 			Handler:   bot.displayShopItemHandler,
 			Interceptor: &Interceptor{
-
+				Fields: log.Fields{
+					"module": "telegram",
+					"func":   "displayShopItemHandler",
+					"path":   "shopItemCancelBuyButton",
+				},
 				Before: []intercept.Func{
 					bot.localizerInterceptor,
 					bot.loadUserInterceptor,

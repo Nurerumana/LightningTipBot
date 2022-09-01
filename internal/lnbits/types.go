@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"github.com/LightningTipBot/LightningTipBot/internal/str"
 	"time"
 
 	"github.com/LightningTipBot/LightningTipBot/internal/satdress"
@@ -36,6 +37,59 @@ type User struct {
 	UUID         string       `json:"uuid"`
 	Banned       bool         `json:"banned"`
 	Settings     *Settings    `json:"settings" gorm:"foreignKey:id"`
+}
+
+func (u User) Log() map[string]interface{} {
+	logMap := make(map[string]interface{})
+	logMap["user_id"] = u.ID
+	if u.Wallet != nil {
+		logMap["wallet_id"] = u.Wallet.ID
+	}
+	if u.Telegram != nil {
+		logMap["telegram_id"] = u.Telegram.ID
+		logMap["user"] = u.GetUserStr()
+	}
+	return logMap
+}
+
+func (u User) GetUserStr() string {
+	userStr := fmt.Sprintf("@%s", u.Telegram.Username)
+	// if user does not have a username
+	if len(userStr) < 2 && u.Telegram.FirstName != "" {
+		userStr = fmt.Sprintf("%s", u.Telegram.FirstName)
+	} else if len(userStr) < 2 {
+		userStr = fmt.Sprintf("%d", u.Telegram.ID)
+	}
+	return userStr
+}
+
+func (u User) GetUserStrMd() string {
+	userStr := fmt.Sprintf("@%s", u.Telegram.Username)
+	// if user does not have a username
+	if len(userStr) < 2 && u.Telegram.FirstName != "" {
+		userStr = fmt.Sprintf("[%s](tg://user?id=%d)", u.Telegram.FirstName, u.Telegram.ID)
+		return userStr
+	} else if len(userStr) < 2 {
+		userStr = fmt.Sprintf("[%d](tg://user?id=%d)", u.Telegram.ID, u.Telegram.ID)
+		return userStr
+	} else {
+		// escape only if user has a username
+		return str.MarkdownEscape(userStr)
+	}
+}
+
+func (u User) AnonIdSha256() string {
+	h := sha256.Sum256([]byte(u.Wallet.ID))
+	hash := fmt.Sprintf("%x", h)
+	anon_id := fmt.Sprintf("0x%s", hash[:16]) // starts with 0x because that can't be a valid telegram username
+	return anon_id
+}
+
+func (u User) UUIDSha256() string {
+	h := sha256.Sum256([]byte(u.Wallet.ID))
+	hash := fmt.Sprintf("%x", h)
+	anon_id := fmt.Sprintf("1x%s", hash[len(hash)-16:]) // starts with 1x because that can't be a valid telegram username
+	return anon_id
 }
 
 type Settings struct {

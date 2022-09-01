@@ -109,7 +109,7 @@ func (bot *TipBot) enterUserHandler(ctx intercept.Context) (intercept.Context, e
 		log.WithFields(log.Fields{
 			"module":      "telegram",
 			"func":        "lnurlPayHandlerSend",
-			"user":        GetUserStr(user.Telegram),
+			"user":        user.GetUserStr(),
 			"user_id":     user.ID,
 			"wallet_id":   user.Wallet.ID,
 			"telegram_id": user.Telegram.ID,

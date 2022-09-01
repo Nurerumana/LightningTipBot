@@ -42,7 +42,7 @@ func (bot *TipBot) lnurlHandler(ctx intercept.Context) (intercept.Context, error
 		"module":      "lnurl",
 		"func":        "lnurlHandler",
 		"path":        "/lnurl",
-		"user":        GetUserStr(user.Telegram),
+		"user":        user.GetUserStr(),
 		"user_id":     user.ID,
 		"wallet_id":   user.Wallet.ID,
 		"telegram_id": user.Telegram.ID}).Infof("%s", m.Text)
@@ -71,7 +71,7 @@ func (bot *TipBot) lnurlHandler(ctx intercept.Context) (intercept.Context, error
 			"module":      "lnurl",
 			"func":        "lnurlHandler",
 			"path":        "/lnurl",
-			"user":        GetUserStr(user.Telegram),
+			"user":        user.GetUserStr(),
 			"user_id":     user.ID,
 			"wallet_id":   user.Wallet.ID,
 			"telegram_id": user.Telegram.ID}).Warnln("Could not parse command.")
@@ -91,7 +91,7 @@ func (bot *TipBot) lnurlHandler(ctx intercept.Context) (intercept.Context, error
 			"module":      "lnurl",
 			"func":        "lnurlHandler",
 			"path":        "/lnurl",
-			"user":        GetUserStr(user.Telegram),
+			"user":        user.GetUserStr(),
 			"user_id":     user.ID,
 			"wallet_id":   user.Wallet.ID,
 			"telegram_id": user.Telegram.ID}).Error(err.Error())
@@ -104,7 +104,7 @@ func (bot *TipBot) lnurlHandler(ctx intercept.Context) (intercept.Context, error
 			"module":      "lnurl-auth",
 			"func":        "lnurlHandler",
 			"path":        "/lnurl",
-			"user":        GetUserStr(user.Telegram),
+			"user":        user.GetUserStr(),
 			"user_id":     user.ID,
 			"wallet_id":   user.Wallet.ID,
 			"telegram_id": user.Telegram.ID}).Info(authParams.LNURLAuthParams.Callback)
@@ -118,7 +118,7 @@ func (bot *TipBot) lnurlHandler(ctx intercept.Context) (intercept.Context, error
 			"module":      "lnurl-p",
 			"func":        "lnurlHandler",
 			"path":        "/lnurl",
-			"user":        GetUserStr(user.Telegram),
+			"user":        user.GetUserStr(),
 			"user_id":     user.ID,
 			"wallet_id":   user.Wallet.ID,
 			"telegram_id": user.Telegram.ID}).Infof(payParams.LNURLPayParams.Callback)
@@ -143,7 +143,7 @@ func (bot *TipBot) lnurlHandler(ctx intercept.Context) (intercept.Context, error
 			"module":      "lnurl-w",
 			"func":        "lnurlHandler",
 			"path":        "/lnurl",
-			"user":        GetUserStr(user.Telegram),
+			"user":        user.GetUserStr(),
 			"user_id":     user.ID,
 			"wallet_id":   user.Wallet.ID,
 			"telegram_id": user.Telegram.ID}).Info(withdrawParams.LNURLWithdrawResponse.Callback)
@@ -157,7 +157,7 @@ func (bot *TipBot) lnurlHandler(ctx intercept.Context) (intercept.Context, error
 			"module":      "lnurl",
 			"func":        "lnurlHandler",
 			"path":        "/lnurl",
-			"user":        GetUserStr(user.Telegram),
+			"user":        user.GetUserStr(),
 			"user_id":     user.ID,
 			"wallet_id":   user.Wallet.ID,
 			"telegram_id": user.Telegram.ID}).Warnln(err)

@@ -55,12 +55,12 @@ func (bot TipBot) donationHandler(ctx intercept.Context) (intercept.Context, err
 	// command is valid
 	msg := bot.trySendMessageEditable(m.Chat, Translate(ctx, "donationProgressMessage"))
 	// get invoice
-	resp, err := http.Get(fmt.Sprintf(donationEndpoint, amount, GetUserStr(user.Telegram), GetUserStr(bot.Telegram.Me)))
+	resp, err := http.Get(fmt.Sprintf(donationEndpoint, amount, user.GetUserStr(), GetUserStr(bot.Telegram.Me)))
 	if err != nil {
 		log.WithFields(log.Fields{
 			"module":      "telegram",
 			"func":        "donationHandler",
-			"user":        GetUserStr(user.Telegram),
+			"user":        user.GetUserStr(),
 			"telegram_id": user.Telegram.ID,
 			"user_id":     user.ID,
 			"amount":      amount,
@@ -74,7 +74,7 @@ func (bot TipBot) donationHandler(ctx intercept.Context) (intercept.Context, err
 		log.WithFields(log.Fields{
 			"module":      "telegram",
 			"func":        "donationHandler",
-			"user":        GetUserStr(user.Telegram),
+			"user":        user.GetUserStr(),
 			"telegram_id": user.Telegram.ID,
 			"user_id":     user.ID,
 			"amount":      amount,
@@ -92,7 +92,7 @@ func (bot TipBot) donationHandler(ctx intercept.Context) (intercept.Context, err
 		log.WithFields(log.Fields{
 			"module":      "telegram",
 			"func":        "donationHandler",
-			"user":        GetUserStr(user.Telegram),
+			"user":        user.GetUserStr(),
 			"telegram_id": user.Telegram.ID,
 			"user_id":     user.ID,
 			"amount":      amount,

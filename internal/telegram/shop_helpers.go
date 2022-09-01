@@ -237,7 +237,7 @@ func (bot *TipBot) getUserShops(ctx intercept.Context, user *lnbits.User) (*Shop
 	tx := &Shops{Base: storage.New(storage.ID(fmt.Sprintf("shops-%d", user.Telegram.ID)))}
 	sn, err := tx.Get(tx, bot.ShopBunt)
 	if err != nil {
-		log.Errorf("[getUserShops] User: %s (%d): %s", GetUserStr(user.Telegram), user.Telegram.ID, err)
+		log.Errorf("[getUserShops] User: %s (%d): %s", user.GetUserStr(), user.Telegram.ID, err)
 		return &Shops{}, err
 	}
 	shops := sn.(*Shops)

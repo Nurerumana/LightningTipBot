@@ -121,7 +121,7 @@ func (bot *TipBot) invoiceHandler(ctx intercept.Context) (intercept.Context, err
 		"module":      "telegram",
 		"func":        "invoiceHandler",
 		"path":        "/invoice",
-		"user":        GetUserStr(user.Telegram),
+		"user":        user.GetUserStr(),
 		"user_id":     user.ID,
 		"wallet_id":   user.Wallet.ID,
 		"telegram_id": user.Telegram.ID}
@@ -194,7 +194,7 @@ func (bot *TipBot) createInvoiceWithEvent(ctx context.Context, user *lnbits.User
 		logfields := log.Fields{
 			"module":      "telegram",
 			"func":        "createInvoiceWithEvent",
-			"user":        GetUserStr(user.Telegram),
+			"user":        user.GetUserStr(),
 			"user_id":     user.ID,
 			"wallet_id":   user.Wallet.ID,
 			"telegram_id": user.Telegram.ID}

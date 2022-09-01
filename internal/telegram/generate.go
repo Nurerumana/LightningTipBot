@@ -65,7 +65,7 @@ func (bot *TipBot) confirmGenerateImages(ctx intercept.Context) (intercept.Conte
 	if err != nil {
 		return ctx, err
 	}
-	invoice, err := bot.createInvoiceWithEvent(ctx, me, internal.Configuration.Generate.DallePrice, fmt.Sprintf("DALLE2 %s", GetUserStr(user.Telegram)), InvoiceCallbackGenerateDalle, prompt)
+	invoice, err := bot.createInvoiceWithEvent(ctx, me, internal.Configuration.Generate.DallePrice, fmt.Sprintf("DALLE2 %s", user.GetUserStr()), InvoiceCallbackGenerateDalle, prompt)
 	invoice.Payer = user
 	if err != nil {
 		return ctx, err
@@ -175,7 +175,7 @@ func (bot *TipBot) generateDalleImages(event Event) {
 					continue
 				}
 				if t.Status == dalle.StatusSucceeded {
-					log.Printf("[DALLE-%d] task succeeded for user %s", workerId, GetUserStr(user.Telegram))
+					log.Printf("[DALLE-%d] task succeeded for user %s", workerId, user.GetUserStr())
 					// download the first generated image
 					for _, data := range t.Generations.Data {
 						err = bot.downloadAndSendImages(ctx, dalleClient, data, invoiceEvent)
@@ -190,7 +190,7 @@ func (bot *TipBot) generateDalleImages(event Event) {
 					bot.dalleRefundUser(user, "Your prompt has been rejected by OpenAI. Do not use celebrity names, sexual expressions, or any other harmful content as prompt.")
 					return
 				}
-				log.Debugf("[DALLE-%d] pending for user %s", workerId, GetUserStr(user.Telegram))
+				log.Debugf("[DALLE-%d] pending for user %s", workerId, user.GetUserStr())
 			}
 		}
 	}
@@ -237,7 +237,7 @@ func (bot *TipBot) dalleRefundUser(user *lnbits.User, message string) error {
 		lnbits.InvoiceParams{
 			Out:     false,
 			Amount:  int64(internal.Configuration.Generate.DallePrice),
-			Memo:    fmt.Sprintf("Refund DALLE2 %s", GetUserStr(user.Telegram)),
+			Memo:    fmt.Sprintf("Refund DALLE2 %s", user.GetUserStr()),
 			Webhook: internal.Configuration.Lnbits.WebhookServer},
 		bot.Client)
 	if err != nil {
@@ -250,7 +250,7 @@ func (bot *TipBot) dalleRefundUser(user *lnbits.User, message string) error {
 		log.Errorln(err)
 		return err
 	}
-	log.Warnf("[DALLE] refunding user %s with %d sat", GetUserStr(user.Telegram), internal.Configuration.Generate.DallePrice)
+	log.Warnf("[DALLE] refunding user %s with %d sat", user.GetUserStr(), internal.Configuration.Generate.DallePrice)
 
 	var err_reason string
 	if len(message) > 0 {

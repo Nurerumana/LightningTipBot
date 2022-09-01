@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
-	"github.com/LightningTipBot/LightningTipBot/internal/telegram"
 	"net/http"
 	"net/http/httputil"
 	"strings"
@@ -83,7 +82,7 @@ func AuthorizationMiddleware(database *gorm.DB, authType AuthType, accessType Ac
 			w.WriteHeader(401)
 			return
 		}
-		log.WithFields(log.Fields{"module": "api", "func": "AuthorizationMiddleware","path":fmt.Sprintf("%s %s%s",r.Method, r.URL.Path, r.URL.RawQuery), "user": telegram.GetUserStr(user.Telegram)}).
+		log.WithFields(log.Fields{"module": "api", "func": "AuthorizationMiddleware", "path": fmt.Sprintf("%s %s%s", r.Method, r.URL.Path, r.URL.RawQuery), "user": user.GetUserStr()}).
 			Debugf("Loaded Api user")
 		r = r.WithContext(context.WithValue(r.Context(), "user", user))
 		next.ServeHTTP(w, r)

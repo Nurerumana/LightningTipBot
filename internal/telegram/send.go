@@ -101,7 +101,7 @@ func (bot *TipBot) sendHandler(ctx intercept.Context) (intercept.Context, error)
 				log.WithFields(log.Fields{
 					"module":    "telegram",
 					"func":      "sendHandler",
-					"user":      GetUserStr(user.Telegram),
+					"user":      user.GetUserStr(),
 					"user_id":   user.ID,
 					"wallet_id": user.Wallet.ID},
 				).Errorln(err.Error())
@@ -132,7 +132,7 @@ func (bot *TipBot) sendHandler(ctx intercept.Context) (intercept.Context, error)
 			"module":    "telegram",
 			"func":      "sendHandler",
 			"path":      "/send",
-			"user":      GetUserStr(user.Telegram),
+			"user":      user.GetUserStr(),
 			"user_id":   user.ID,
 			"wallet_id": user.Wallet.ID},
 		).Warnln(errmsg)
@@ -160,7 +160,7 @@ func (bot *TipBot) sendHandler(ctx intercept.Context) (intercept.Context, error)
 				"module":    "telegram",
 				"func":      "sendHandler",
 				"path":      "/send",
-				"user":      GetUserStr(user.Telegram),
+				"user":      user.GetUserStr(),
 				"user_id":   user.ID,
 				"wallet_id": user.Wallet.ID},
 			).Errorln(err.Error())
@@ -218,7 +218,7 @@ func (bot *TipBot) sendHandler(ctx intercept.Context) (intercept.Context, error)
 			"module":    "telegram",
 			"func":      "sendHandler",
 			"path":      "/send",
-			"user":      GetUserStr(user.Telegram),
+			"user":      user.GetUserStr(),
 			"user_id":   user.ID,
 			"wallet_id": user.Wallet.ID},
 		).Error(err.Error())
@@ -267,7 +267,7 @@ func (bot *TipBot) keyboardSendHandler(ctx intercept.Context) (intercept.Context
 			"module":    "telegram",
 			"func":      "keyboardSendHandler",
 			"path":      "/send",
-			"user":      GetUserStr(user.Telegram),
+			"user":      user.GetUserStr(),
 			"user_id":   user.ID,
 			"wallet_id": user.Wallet.ID},
 		).Errorln(err)
@@ -292,7 +292,7 @@ func (bot *TipBot) keyboardSendHandler(ctx intercept.Context) (intercept.Context
 			"module":    "telegram",
 			"func":      "keyboardSendHandler",
 			"path":      "/send",
-			"user":      GetUserStr(user.Telegram),
+			"user":      user.GetUserStr(),
 			"user_id":   user.ID,
 			"wallet_id": user.Wallet.ID},
 		).Errorln(err.Error())

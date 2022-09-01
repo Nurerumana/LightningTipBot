@@ -1,10 +1,11 @@
-package internal
+package log
 
 import (
 	log "github.com/sirupsen/logrus"
 	"go.elastic.co/ecslogrus"
 	"gopkg.in/natefinch/lumberjack.v2"
 	"io"
+	"time"
 )
 
 func init() {
@@ -27,6 +28,34 @@ func init() {
 		panic(err)
 	}
 	log.AddHook(rotateFileHook)
+}
+
+type Logger struct {
+	logger *log.Logger
+	vars   map[string]interface{}
+}
+type Loggable interface {
+	Log() map[string]interface{}
+}
+
+func WithObjects(objects ...interface{}) *log.Entry {
+	fields := log.Fields{}
+	for _, object := range objects {
+		switch object.(type) {
+		case Loggable:
+			for key, value := range object.(Loggable).Log() {
+				fields[key] = value
+			}
+		case time.Time:
+			t := object.(time.Time)
+			fields["runtime"] = time.Now().Sub(t).String()
+		case error:
+			err := object.(error)
+			fields["error"] = err.Error()
+		}
+
+	}
+	return log.StandardLogger().WithFields(fields)
 }
 
 type RotateFileConfig struct {

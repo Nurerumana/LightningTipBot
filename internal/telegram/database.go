@@ -255,11 +255,11 @@ func UpdateUserRecord(user *lnbits.User, bot TipBot) error {
 	// TODO -- Remove this after empty anon id bug is identified
 	if user.AnonIDSha256 == "" {
 		debugStack()
-		user.AnonIDSha256 = str.AnonIdSha256(user)
+		user.AnonIDSha256 = user.AnonIdSha256()
 		log.WithFields(log.Fields{
 			"module":    "database",
 			"func":      "UpdateUserRecord",
-			"user":      GetUserStr(user.Telegram),
+			"user":      user.GetUserStr(),
 			"user_id":   user.ID,
 			"wallet_id": user.Wallet.ID,
 			"annon_id":  user.AnonIDSha256,
@@ -272,7 +272,7 @@ func UpdateUserRecord(user *lnbits.User, bot TipBot) error {
 		log.WithFields(log.Fields{
 			"module":    "database",
 			"func":      "UpdateUserRecord",
-			"user":      GetUserStr(user.Telegram),
+			"user":      user.GetUserStr(),
 			"user_id":   user.ID,
 			"wallet_id": user.Wallet.ID,
 			"annon_id":  user.AnonID,
@@ -281,11 +281,11 @@ func UpdateUserRecord(user *lnbits.User, bot TipBot) error {
 	// TODO -- Remove this after empty anon id bug is identified
 	if user.UUID == "" {
 		debugStack()
-		user.UUID = str.UUIDSha256(user)
+		user.UUID = user.UUIDSha256()
 		log.WithFields(log.Fields{
 			"module":    "database",
 			"func":      "UpdateUserRecord",
-			"user":      GetUserStr(user.Telegram),
+			"user":      user.GetUserStr(),
 			"user_id":   user.ID,
 			"wallet_id": user.Wallet.ID,
 			"annon_id":  user.UUID,
@@ -294,23 +294,15 @@ func UpdateUserRecord(user *lnbits.User, bot TipBot) error {
 
 	tx := bot.DB.Users.Save(user)
 	if tx.Error != nil {
-		errmsg := fmt.Sprintf("[UpdateUserRecord] Error: Couldn't update userinfo in Database.")
-		log.WithFields(log.Fields{
-			"module":    "database",
-			"func":      "UpdateUserRecord",
-			"user":      GetUserStr(user.Telegram),
-			"user_id":   user.ID,
-			"wallet_id": user.Wallet.ID,
-		}).Errorln(errmsg)
 		return tx.Error
 	}
 	log.WithFields(log.Fields{
 		"module":    "database",
 		"func":      "UpdateUserRecord",
-		"user":      GetUserStr(user.Telegram),
+		"user":      user.GetUserStr(),
 		"user_id":   user.ID,
 		"wallet_id": user.Wallet.ID,
-	}).Tracef("[UpdateUserRecord] Updated records of user.")
+	}).Info("Updated records of user")
 	if bot.Cache.GoCacheStore != nil {
 		updateCachedUser(user, bot)
 	}

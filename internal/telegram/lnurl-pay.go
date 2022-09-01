@@ -78,7 +78,7 @@ func (bot *TipBot) lnurlPayHandler(ctx intercept.Context, payParams *LnurlPaySta
 		log.WithFields(log.Fields{
 			"module":    "telegram",
 			"func":      "lnurlPayHandler",
-			"user":      GetUserStr(user.Telegram),
+			"user":      user.GetUserStr(),
 			"user_id":   user.ID,
 			"wallet_id": user.Wallet.ID}).Warnf("%s", err.Error())
 		bot.trySendMessage(m.Sender, fmt.Sprintf(Translate(ctx, "lnurlInvalidAmountRangeMessage"), payParams.LNURLPayParams.MinSendable/1000, payParams.LNURLPayParams.MaxSendable/1000))
@@ -114,7 +114,7 @@ func (bot *TipBot) lnurlPayHandler(ctx intercept.Context, payParams *LnurlPaySta
 		log.WithFields(log.Fields{
 			"module":    "telegram",
 			"func":      "lnurlPayHandler",
-			"user":      GetUserStr(user.Telegram),
+			"user":      user.GetUserStr(),
 			"user_id":   user.ID,
 			"wallet_id": user.Wallet.ID}).Errorf(err.Error())
 		// bot.trySendMessage(m.Sender, err.Error())
@@ -140,7 +140,7 @@ func (bot *TipBot) lnurlPayHandlerSend(ctx intercept.Context) (intercept.Context
 		log.WithFields(log.Fields{
 			"module":    "telegram",
 			"func":      "lnurlPayHandlerSend",
-			"user":      GetUserStr(user.Telegram),
+			"user":      user.GetUserStr(),
 			"user_id":   user.ID,
 			"wallet_id": user.Wallet.ID}).Errorln("state keys don't match")
 		bot.tryEditMessage(statusMsg, Translate(ctx, "errorTryLaterMessage"))
@@ -154,7 +154,7 @@ func (bot *TipBot) lnurlPayHandlerSend(ctx intercept.Context) (intercept.Context
 		log.WithFields(log.Fields{
 			"module":    "telegram",
 			"func":      "lnurlPayHandlerSend",
-			"user":      GetUserStr(user.Telegram),
+			"user":      user.GetUserStr(),
 			"user_id":   user.ID,
 			"wallet_id": user.Wallet.ID}).Errorf("Error: %s", err.Error())
 		bot.tryEditMessage(statusMsg, Translate(ctx, "errorTryLaterMessage"))
@@ -169,7 +169,7 @@ func (bot *TipBot) lnurlPayHandlerSend(ctx intercept.Context) (intercept.Context
 		log.WithFields(log.Fields{
 			"module":    "telegram",
 			"func":      "lnurlPayHandlerSend",
-			"user":      GetUserStr(user.Telegram),
+			"user":      user.GetUserStr(),
 			"user_id":   user.ID,
 			"wallet_id": user.Wallet.ID}).Errorf(err.Error())
 		bot.tryEditMessage(statusMsg, Translate(ctx, "errorTryLaterMessage"))
@@ -184,7 +184,7 @@ func (bot *TipBot) lnurlPayHandlerSend(ctx intercept.Context) (intercept.Context
 		log.WithFields(log.Fields{
 			"module":    "telegram",
 			"func":      "lnurlPayHandlerSend",
-			"user":      GetUserStr(user.Telegram),
+			"user":      user.GetUserStr(),
 			"user_id":   user.ID,
 			"wallet_id": user.Wallet.ID}).Errorf(err.Error())
 		bot.tryEditMessage(statusMsg, Translate(ctx, "errorTryLaterMessage"))
@@ -195,7 +195,7 @@ func (bot *TipBot) lnurlPayHandlerSend(ctx intercept.Context) (intercept.Context
 		log.WithFields(log.Fields{
 			"module":    "telegram",
 			"func":      "lnurlPayHandlerSend",
-			"user":      GetUserStr(user.Telegram),
+			"user":      user.GetUserStr(),
 			"user_id":   user.ID,
 			"wallet_id": user.Wallet.ID}).Errorf(err.Error())
 		bot.tryEditMessage(statusMsg, Translate(ctx, "errorTryLaterMessage"))
@@ -216,7 +216,7 @@ func (bot *TipBot) lnurlPayHandlerSend(ctx intercept.Context) (intercept.Context
 		log.WithFields(log.Fields{
 			"module":    "telegram",
 			"func":      "lnurlPayHandlerSend",
-			"user":      GetUserStr(user.Telegram),
+			"user":      user.GetUserStr(),
 			"user_id":   user.ID,
 			"wallet_id": user.Wallet.ID}).Errorf(err.Error())
 		bot.tryEditMessage(statusMsg, Translate(ctx, "errorTryLaterMessage"))
@@ -227,7 +227,7 @@ func (bot *TipBot) lnurlPayHandlerSend(ctx intercept.Context) (intercept.Context
 		log.WithFields(log.Fields{
 			"module":    "telegram",
 			"func":      "lnurlPayHandlerSend",
-			"user":      GetUserStr(user.Telegram),
+			"user":      user.GetUserStr(),
 			"user_id":   user.ID,
 			"wallet_id": user.Wallet.ID}).Errorf(err.Error())
 		bot.tryEditMessage(statusMsg, Translate(ctx, "errorTryLaterMessage"))
@@ -244,7 +244,7 @@ func (bot *TipBot) lnurlPayHandlerSend(ctx intercept.Context) (intercept.Context
 		log.WithFields(log.Fields{
 			"module":      "telegram",
 			"func":        "lnurlPayHandlerSend",
-			"user":        GetUserStr(user.Telegram),
+			"user":        user.GetUserStr(),
 			"user_id":     user.ID,
 			"wallet_id":   user.Wallet.ID,
 			"telegram_id": user.Telegram.ID,

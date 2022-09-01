@@ -11,7 +11,6 @@ import (
 	"github.com/LightningTipBot/LightningTipBot/internal/lnbits"
 	"github.com/LightningTipBot/LightningTipBot/internal/telegram"
 	"github.com/gorilla/mux"
-	"io"
 	"github.com/r3labs/sse"
 )
 
@@ -44,7 +43,7 @@ func (s Service) Balance(w http.ResponseWriter, r *http.Request) {
 	log.WithFields(log.Fields{
 		"module":      "api",
 		"func":        "PayInvoice",
-		"user":        telegram.GetUserStr(user.Telegram),
+		"user":        user.GetUserStr(),
 		"user_id":     user.ID,
 		"amount":      balance,
 		"wallet_id":   user.Wallet.ID,
@@ -78,7 +77,7 @@ func (s Service) CreateInvoice(w http.ResponseWriter, r *http.Request) {
 	log.WithFields(log.Fields{
 		"module":      "api",
 		"func":        "CreateInvoice",
-		"user":        telegram.GetUserStr(user.Telegram),
+		"user":        user.GetUserStr(),
 		"user_id":     user.ID,
 		"wallet_id":   user.Wallet.ID,
 		"amount":      createInvoiceRequest.Amount,
@@ -111,7 +110,7 @@ func (s Service) PayInvoice(w http.ResponseWriter, r *http.Request) {
 	log.WithFields(log.Fields{
 		"module":      "api",
 		"func":        "PayInvoice",
-		"user":        telegram.GetUserStr(user.Telegram),
+		"user":        user.GetUserStr(),
 		"user_id":     user.ID,
 		"wallet_id":   user.Wallet.ID,
 		"invoice":     invoice.PaymentRequest,
@@ -132,7 +131,7 @@ func (s Service) PaymentStatus(w http.ResponseWriter, r *http.Request) {
 	log.WithFields(log.Fields{
 		"module":      "api",
 		"func":        "PayInvoice",
-		"user":        telegram.GetUserStr(user.Telegram),
+		"user":        user.GetUserStr(),
 		"user_id":     user.ID,
 		"status":      payment.Paid,
 		"wallet_id":   user.Wallet.ID,
@@ -155,7 +154,7 @@ func (s Service) InvoiceStatus(w http.ResponseWriter, r *http.Request) {
 	log.WithFields(log.Fields{
 		"module":      "api",
 		"func":        "PayInvoice",
-		"user":        telegram.GetUserStr(user.Telegram),
+		"user":        user.GetUserStr(),
 		"user_id":     user.ID,
 		"status":      payment.Paid,
 		"wallet_id":   user.Wallet.ID,

@@ -433,7 +433,7 @@ func (bot *TipBot) getItemTitle(ctx context.Context, item *ShopItem) string {
 // m is the message that will be edited
 func (bot *TipBot) displayShopItem(ctx intercept.Context, m *tb.Message, shop *Shop) *tb.Message {
 	user := LoadUser(ctx)
-	log.Debugf("[displayShopItem] User: %s shop: %s", GetUserStr(user.Telegram), shop.ID)
+	log.Debugf("[displayShopItem] User: %s shop: %s", user.GetUserStr(), shop.ID)
 	shopView, err := bot.getUserShopview(ctx, user)
 	if err != nil {
 		log.Errorf("[displayShopItem] %s", err.Error())
@@ -650,7 +650,7 @@ func (bot *TipBot) addShopItemPhoto(ctx intercept.Context) (intercept.Context, e
 	bot.Cache.Set(shopView.ID, shopView, &store.Options{Expiration: 24 * time.Hour})
 	bot.displayShopItem(ctx, shopView.Message, shop)
 
-	log.Infof("[🛍 shop] %s added an item %s:%s.", GetUserStr(user.Telegram), shop.ID, item.ID)
+	log.Infof("[🛍 shop] %s added an item %s:%s.", user.GetUserStr(), shop.ID, item.ID)
 	return ctx, nil
 }
 
@@ -779,7 +779,7 @@ func (bot *TipBot) addItemFileHandler(ctx intercept.Context) (intercept.Context,
 	// 	bot.shopViewDeleteAllStatusMsgs(ctx, user)
 	// }()
 	bot.displayShopItem(ctx, shopView.Message, shop)
-	log.Infof("[🛍 shop] %s added a file to shop:item %s:%s.", GetUserStr(user.Telegram), shop.ID, item.ID)
+	log.Infof("[🛍 shop] %s added a file to shop:item %s:%s.", user.GetUserStr(), shop.ID, item.ID)
 	return ctx, nil
 }
 
@@ -818,7 +818,7 @@ func (bot *TipBot) shopGetItemFilesHandler(ctx intercept.Context) (intercept.Con
 	// for i, fileID := range item.FileIDs {
 	// 	bot.sendFileByID(ctx, c.Sender, fileID, item.FileTypes[i])
 	// }
-	// log.Infof("[🛍 shop] %s got %d items from %s's item %s (for %d sat).", GetUserStr(user.Telegram), len(item.FileIDs), GetUserStr(shop.Owner.Telegram), item.ID, item.Price)
+	// log.Infof("[🛍 shop] %s got %d items from %s's item %s (for %d sat).", user.GetUserStr(), len(item.FileIDs), GetUserStr(shop.Owner.Telegram), item.ID, item.Price)
 	return ctx, nil
 }
 
@@ -908,7 +908,7 @@ func (bot *TipBot) shopSendItemFilesToUser(ctx intercept.Context, toUser *lnbits
 	for i, fileID := range item.FileIDs {
 		bot.sendFileByID(ctx, toUser.Telegram, fileID, item.FileTypes[i])
 	}
-	log.Infof("[🛍 shop] %s got %d items from %s's item %s (for %d sat).", GetUserStr(user.Telegram), len(item.FileIDs), GetUserStr(shop.Owner.Telegram), item.ID, item.Price)
+	log.Infof("[🛍 shop] %s got %d items from %s's item %s (for %d sat).", user.GetUserStr(), len(item.FileIDs), GetUserStr(shop.Owner.Telegram), item.ID, item.Price)
 
 	// delete old shop and show again below the files
 	if shopView.Message != nil {

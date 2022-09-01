@@ -67,7 +67,7 @@ func (bot *TipBot) tipHandler(ctx intercept.Context) (intercept.Context, error) 
 			"module":    "telegram",
 			"func":      "tipHandler",
 			"path":      "/tip",
-			"user":      GetUserStr(user.Telegram),
+			"user":      user.GetUserStr(),
 			"user_id":   user.ID,
 			"amount":    amount,
 			"wallet_id": user.Wallet.ID}).Warnln(err.Error())
@@ -81,7 +81,7 @@ func (bot *TipBot) tipHandler(ctx intercept.Context) (intercept.Context, error) 
 			"module":    "telegram",
 			"func":      "tipHandler",
 			"path":      "/tip",
-			"user":      GetUserStr(user.Telegram),
+			"user":      user.GetUserStr(),
 			"user_id":   user.ID,
 			"amount":    amount,
 			"wallet_id": user.Wallet.ID}).Warnln(err.Error())

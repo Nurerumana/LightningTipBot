@@ -30,7 +30,7 @@ func MigrateAnonIdSha265Hash(db *gorm.DB) error {
 	_ = db.Find(&users)
 	for _, u := range users {
 		pw := u.Wallet.ID
-		anon_id := str.AnonIdSha256(&u)
+		anon_id := u.AnonIdSha256()
 		log.Infof("[MigrateAnonIdSha265Hash] %s -> %s", pw, anon_id)
 		u.AnonIDSha256 = anon_id
 		tx := db.Save(u)
@@ -48,7 +48,7 @@ func MigrateUUIDSha265Hash(db *gorm.DB) error {
 	_ = db.Find(&users)
 	for _, u := range users {
 		pw := u.Wallet.ID
-		uuid := str.UUIDSha256(&u)
+		uuid := u.UUIDSha256()
 		log.Infof("[MigrateUUIDSha265Hash] %s -> %s", pw, uuid)
 		u.UUID = uuid
 		tx := db.Save(u)

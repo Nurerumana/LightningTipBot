@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/LightningTipBot/LightningTipBot/internal/lnbits"
-	"github.com/LightningTipBot/LightningTipBot/internal/str"
 	"github.com/eko/gocache/store"
 	log "github.com/sirupsen/logrus"
 	tb "gopkg.in/lightningtipbot/telebot.v3"
@@ -25,33 +24,13 @@ func ResetUserState(user *lnbits.User, bot *TipBot) {
 	user.ResetState()
 	UpdateUserRecord(user, *bot)
 }
-
 func GetUserStr(user *tb.User) string {
-	userStr := fmt.Sprintf("@%s", user.Username)
-	// if user does not have a username
-	if len(userStr) < 2 && user.FirstName != "" {
-		userStr = fmt.Sprintf("%s", user.FirstName)
-	} else if len(userStr) < 2 {
-		userStr = fmt.Sprintf("%d", user.ID)
-	}
-	return userStr
+	return lnbits.User{Telegram: user}.GetUserStr()
 }
 
 func GetUserStrMd(user *tb.User) string {
-	userStr := fmt.Sprintf("@%s", user.Username)
-	// if user does not have a username
-	if len(userStr) < 2 && user.FirstName != "" {
-		userStr = fmt.Sprintf("[%s](tg://user?id=%d)", user.FirstName, user.ID)
-		return userStr
-	} else if len(userStr) < 2 {
-		userStr = fmt.Sprintf("[%d](tg://user?id=%d)", user.ID, user.ID)
-		return userStr
-	} else {
-		// escape only if user has a username
-		return str.MarkdownEscape(userStr)
-	}
+	return lnbits.User{Telegram: user}.GetUserStrMd()
 }
-
 func appendUinqueUsersToSlice(slice []*tb.User, i *tb.User) []*tb.User {
 	for _, ele := range slice {
 		if ele.ID == i.ID {
@@ -77,16 +56,6 @@ func (bot *TipBot) GetUserBalance(user *lnbits.User) (amount int64, err error) {
 
 	wallet, err := bot.Client.Info(*user.Wallet)
 	if err != nil {
-		log.WithFields(log.Fields{
-			"module":      "telegram",
-			"func":        "GetUserBalance",
-			"user":        GetUserStr(user.Telegram),
-			"user_id":     user.ID,
-			"wallet_id":   user.Wallet.ID,
-			"telegram_id": user.Telegram.ID,
-			"amount":      amount,
-			"error":       err.Error()},
-		).Debugf("Couldn't fetch user balance form LNbits")
 		return
 	}
 	user.Wallet.Balance = wallet.Balance
@@ -112,7 +81,7 @@ func (bot *TipBot) GetUserBalance(user *lnbits.User) (amount int64, err error) {
 		amount,
 		&store.Options{Expiration: 1 * time.Hour},
 	)
-	return
+	return amount, nil
 }
 
 func (bot *TipBot) CreateWalletForTelegramUser(tbUser *tb.User) (*lnbits.User, error) {
