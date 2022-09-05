@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/LightningTipBot/LightningTipBot/internal/log"
+	"github.com/sirupsen/logrus"
 	"strings"
 	"time"
 
@@ -17,7 +19,6 @@ import (
 	"github.com/LightningTipBot/LightningTipBot/internal/storage"
 	"github.com/LightningTipBot/LightningTipBot/internal/str"
 	"github.com/eko/gocache/store"
-	log "github.com/sirupsen/logrus"
 	tb "gopkg.in/lightningtipbot/telebot.v3"
 )
 
@@ -117,7 +118,7 @@ var (
 // shopItemPriceHandler is invoked when the user presses the item settings button to set a price
 func (bot *TipBot) shopItemPriceHandler(ctx intercept.Context) (intercept.Context, error) {
 	c := ctx.Callback()
-	log.Debugf("[shopItemPriceHandler] %s", c.Data)
+	log.WithObjects(ctx).Debugf("[shopItemPriceHandler] %s", c.Data)
 	user := LoadUser(ctx)
 	shopView, err := bot.getUserShopview(ctx, user)
 	if err != nil {
@@ -130,7 +131,7 @@ func (bot *TipBot) shopItemPriceHandler(ctx intercept.Context) (intercept.Contex
 	item := shop.Items[shop.ItemIds[shopView.Page]]
 	// sanity check
 	if item.ID != c.Data {
-		log.Error("[shopItemPriceHandler] item id mismatch")
+		log.WithObjects(ctx).Error("[shopItemPriceHandler] item id mismatch")
 		return ctx, errors.Create(errors.ItemIdMismatchError)
 	}
 	// We need to save the pay state in the user state so we can load the payment in the next handler
@@ -142,8 +143,8 @@ func (bot *TipBot) shopItemPriceHandler(ctx intercept.Context) (intercept.Contex
 // enterShopItemPriceHandler is invoked when the user enters a price amount
 func (bot *TipBot) enterShopItemPriceHandler(ctx intercept.Context) (intercept.Context, error) {
 	m := ctx.Message()
-	log.Debugf("[enterShopItemPriceHandler] %s", m.Text)
 	user := LoadUser(ctx)
+	log.WithObjects(ctx, user).Debugf("[enterShopItemPriceHandler] %s", m.Text)
 	shopView, err := bot.getUserShopview(ctx, user)
 	if err != nil {
 		return ctx, err
@@ -158,7 +159,7 @@ func (bot *TipBot) enterShopItemPriceHandler(ctx intercept.Context) (intercept.C
 	item := shop.Items[shop.ItemIds[shopView.Page]]
 	// sanity check
 	if item.ID != user.StateData {
-		log.Error("[shopItemPriceHandler] item id mismatch")
+		log.WithObjects(ctx, user).Error("[shopItemPriceHandler] item id mismatch")
 		return ctx, fmt.Errorf("item id mismatch")
 	}
 
@@ -168,7 +169,7 @@ func (bot *TipBot) enterShopItemPriceHandler(ctx intercept.Context) (intercept.C
 	} else {
 		amount, err = GetAmount(m.Text)
 		if err != nil {
-			log.Warnf("[enterShopItemPriceHandler] %s", err.Error())
+			log.WithObjects(ctx, user).Warnf("[enterShopItemPriceHandler] %s", err.Error())
 			bot.trySendMessage(m.Sender, Translate(ctx, "lnurlInvalidAmountMessage"))
 			ResetUserState(user, bot)
 			return ctx, err
@@ -196,8 +197,8 @@ func (bot *TipBot) enterShopItemPriceHandler(ctx intercept.Context) (intercept.C
 // shopItemPriceHandler is invoked when the user presses the item settings button to set a item title
 func (bot *TipBot) shopItemTitleHandler(ctx intercept.Context) (intercept.Context, error) {
 	c := ctx.Callback()
-	log.Debugf("[shopItemTitleHandler] %s", c.Data)
 	user := LoadUser(ctx)
+	log.WithObjects(ctx, user).Debugf("[shopItemTitleHandler] %s", c.Data)
 	shopView, err := bot.getUserShopview(ctx, user)
 	if err != nil {
 		return ctx, err
@@ -209,7 +210,7 @@ func (bot *TipBot) shopItemTitleHandler(ctx intercept.Context) (intercept.Contex
 	item := shop.Items[shop.ItemIds[shopView.Page]]
 	// sanity check
 	if item.ID != c.Data {
-		log.Error("[shopItemTitleHandler] item id mismatch")
+		log.WithObjects(ctx, user).Error("[shopItemTitleHandler] item id mismatch")
 		return ctx, errors.Create(errors.ItemIdMismatchError)
 	}
 	// We need to save the pay state in the user state so we can load the payment in the next handler
@@ -221,8 +222,8 @@ func (bot *TipBot) shopItemTitleHandler(ctx intercept.Context) (intercept.Contex
 // enterShopItemTitleHandler is invoked when the user enters a title of the item
 func (bot *TipBot) enterShopItemTitleHandler(ctx intercept.Context) (intercept.Context, error) {
 	m := ctx.Message()
-	log.Debugf("[enterShopItemTitleHandler] %s", m.Text)
 	user := LoadUser(ctx)
+	log.WithObjects(ctx, user).Debugf("[enterShopItemTitleHandler] %s", m.Text)
 	shopView, err := bot.getUserShopview(ctx, user)
 	if err != nil {
 		return ctx, err
@@ -237,7 +238,7 @@ func (bot *TipBot) enterShopItemTitleHandler(ctx intercept.Context) (intercept.C
 	item := shop.Items[shop.ItemIds[shopView.Page]]
 	// sanity check
 	if item.ID != user.StateData {
-		log.Error("[enterShopItemTitleHandler] item id mismatch")
+		log.WithObjects(ctx, user).Error("[enterShopItemTitleHandler] item id mismatch")
 		return ctx, errors.Create(errors.ItemIdMismatchError)
 	}
 	if len(m.Text) == 0 {
@@ -271,8 +272,8 @@ func (bot *TipBot) enterShopItemTitleHandler(ctx intercept.Context) (intercept.C
 // shopItemSettingsHandler is invoked when the user presses the item settings button
 func (bot *TipBot) shopItemSettingsHandler(ctx intercept.Context) (intercept.Context, error) {
 	c := ctx.Callback()
-	log.Debugf("[shopItemSettingsHandler] %s", c.Data)
 	user := LoadUser(ctx)
+	log.WithObjects(ctx, user).Debugf("[shopItemSettingsHandler] %s", c.Data)
 	shopView, err := bot.getUserShopview(ctx, user)
 	if err != nil {
 		return ctx, err
@@ -281,7 +282,7 @@ func (bot *TipBot) shopItemSettingsHandler(ctx intercept.Context) (intercept.Con
 	item := shop.Items[shop.ItemIds[shopView.Page]]
 	// sanity check
 	if item.ID != c.Data {
-		log.Error("[shopItemSettingsHandler] item id mismatch")
+		log.WithObjects(ctx, user).Error("[shopItemSettingsHandler] item id mismatch")
 		return ctx, errors.Create(errors.ItemIdMismatchError)
 	}
 	if item.TbPhoto != nil {
@@ -294,8 +295,8 @@ func (bot *TipBot) shopItemSettingsHandler(ctx intercept.Context) (intercept.Con
 // shopItemPriceHandler is invoked when the user presses the item settings button to set a item title
 func (bot *TipBot) shopItemDeleteHandler(ctx intercept.Context) (intercept.Context, error) {
 	c := ctx.Callback()
-	log.Debugf("[shopItemDeleteHandler] %s", c.Data)
 	user := LoadUser(ctx)
+	log.WithObjects(ctx, user).Debugf("[shopItemDeleteHandler] %s", c.Data)
 	shopView, err := bot.getUserShopview(ctx, user)
 	if err != nil {
 		return ctx, err
@@ -344,8 +345,8 @@ func (bot *TipBot) shopItemDeleteHandler(ctx intercept.Context) (intercept.Conte
 // displayShopItemHandler is invoked when the user presses the back button in the item settings
 func (bot *TipBot) displayShopItemHandler(ctx intercept.Context) (intercept.Context, error) {
 	c := ctx.Callback()
-	log.Debugf("[displayShopItemHandler] c.Data: %s", c.Data)
 	user := LoadUser(ctx)
+	log.WithObjects(ctx, user).Debugf("[displayShopItemHandler] c.Data: %s", c.Data)
 	shopView, err := bot.getUserShopview(ctx, user)
 	if err != nil {
 		return ctx, err
@@ -367,8 +368,8 @@ func (bot *TipBot) displayShopItemHandler(ctx intercept.Context) (intercept.Cont
 // shopNextItemHandler is invoked when the user presses the next item button
 func (bot *TipBot) shopNextItemButtonHandler(ctx intercept.Context) (intercept.Context, error) {
 	c := ctx.Callback()
-	log.Debugf("[shopNextItemButtonHandler] c.Data: %s", c.Data)
 	user := LoadUser(ctx)
+	log.WithObjects(ctx, user).Debugf("[shopNextItemButtonHandler] c.Data: %s", c.Data)
 	// shopView, err := bot.Cache.Get(fmt.Sprintf("shopview-%d", user.Telegram.ID))
 	shopView, err := bot.getUserShopview(ctx, user)
 	if err != nil {
@@ -390,8 +391,8 @@ func (bot *TipBot) shopNextItemButtonHandler(ctx intercept.Context) (intercept.C
 // shopPrevItemButtonHandler is invoked when the user presses the previous item button
 func (bot *TipBot) shopPrevItemButtonHandler(ctx intercept.Context) (intercept.Context, error) {
 	c := ctx.Callback()
-	log.Debugf("[shopPrevItemButtonHandler] %s", c.Data)
 	user := LoadUser(ctx)
+	log.WithObjects(ctx, user).Debugf("[shopPrevItemButtonHandler] %s", c.Data)
 	shopView, err := bot.getUserShopview(ctx, user)
 	if err != nil {
 		return ctx, err
@@ -433,10 +434,10 @@ func (bot *TipBot) getItemTitle(ctx context.Context, item *ShopItem) string {
 // m is the message that will be edited
 func (bot *TipBot) displayShopItem(ctx intercept.Context, m *tb.Message, shop *Shop) *tb.Message {
 	user := LoadUser(ctx)
-	log.Debugf("[displayShopItem] User: %s shop: %s", user.GetUserStr(), shop.ID)
+	logFields := ctx.Context.Value("fields").(logrus.Fields)
 	shopView, err := bot.getUserShopview(ctx, user)
 	if err != nil {
-		log.Errorf("[displayShopItem] %s", err.Error())
+		log.WithObjects(ctx, user).WithFields(logFields).Errorf("[displayShopItem] %s", err.Error())
 		return nil
 	}
 	// failsafe: if the page is out of bounds, reset it
@@ -445,8 +446,10 @@ func (bot *TipBot) displayShopItem(ctx intercept.Context, m *tb.Message, shop *S
 	} else if len(shop.Items) == 0 {
 		shopView.Page = 0
 	}
-
-	log.Debugf("[displayShopItem] shop: %s page: %d items: %d", shop.ID, shopView.Page, len(shop.Items))
+	logFields["shop"] = shop.ID
+	logFields["page"] = shopView.Page
+	logFields["items"] = len(shop.Items)
+	log.WithObjects(ctx, user).WithFields(logFields).Debug("displaying shop items")
 	if len(shop.Items) == 0 {
 		no_items_message := "There are no items in this shop yet."
 		if shopView.Message != nil && len(shopView.Message.Text) > 0 {
@@ -499,12 +502,15 @@ func (bot *TipBot) displayShopItem(ctx intercept.Context, m *tb.Message, shop *S
 // shopHandler is invoked when the user enters /shop
 func (bot *TipBot) shopHandler(ctx intercept.Context) (intercept.Context, error) {
 	m := ctx.Message()
-	log.Debugf("[shopHandler] %s", m.Text)
 	if !m.Private() {
 		return ctx, errors.Create(errors.NoPrivateChatError)
 	}
 	user := LoadUser(ctx)
 	shopOwner := user
+	logFields := ctx.Context.Value("fields").(logrus.Fields)
+
+	logFields["text"] = m.Text
+	log.WithObjects(ctx, user).WithFields(logFields).Debug("displaying shop items")
 
 	// when no argument is given, i.e. command is only /shop, load /shops
 	shop := &Shop{}
@@ -516,7 +522,7 @@ func (bot *TipBot) shopHandler(ctx intercept.Context) (intercept.Context, error)
 		var err error
 		shop, err = bot.getShop(ctx, shopID)
 		if err != nil {
-			log.Errorf("[shopHandler] %s", err.Error())
+			log.WithObjects(ctx, user, err).WithFields(logFields).Error("error fetching shop")
 			return ctx, err
 		}
 	}
@@ -545,11 +551,14 @@ func (bot *TipBot) shopHandler(ctx intercept.Context) (intercept.Context, error)
 // shopNewItemHandler is invoked when the user presses the new item button
 func (bot *TipBot) shopNewItemHandler(ctx intercept.Context) (intercept.Context, error) {
 	c := ctx.Callback()
-	log.Debugf("[shopNewItemHandler] %s", c.Data)
 	user := LoadUser(ctx)
+	logFields := ctx.Context.Value("fields").(logrus.Fields)
+
+	log.WithObjects(ctx, user).WithFields(logFields).Debug("creating new item")
+
 	shop, err := bot.getShop(ctx, c.Data)
 	if err != nil {
-		log.Errorf("[shopNewItemHandler] %s", err.Error())
+		log.WithObjects(ctx, user, err).WithFields(logFields).Error("error fetching shop")
 		return ctx, err
 	}
 	if shop.Owner.Telegram.ID != c.Sender.ID {
@@ -563,7 +572,7 @@ func (bot *TipBot) shopNewItemHandler(ctx intercept.Context) (intercept.Context,
 	// We need to save the pay state in the user state so we can load the payment in the next handler
 	paramsJson, err := json.Marshal(shop)
 	if err != nil {
-		log.Errorf("[lnurlWithdrawHandler] Error: %s", err.Error())
+		log.WithObjects(ctx, user, err).WithFields(logFields).Error("error marshaling shop")
 		// bot.trySendMessage(m.Sender, err.Error())
 		return ctx, err
 	}
@@ -574,13 +583,15 @@ func (bot *TipBot) shopNewItemHandler(ctx intercept.Context) (intercept.Context,
 
 // addShopItem is a helper function for creating a shop item in the database
 func (bot *TipBot) addShopItem(ctx intercept.Context, shopId string) (*Shop, ShopItem, error) {
-	log.Debugf("[addShopItem] shopId: %s", shopId)
+
+	user := LoadUser(ctx)
+	log.WithObjects(ctx, user).WithFields(logrus.Fields{"shop": shopId}).Debug("adding shop item")
+
 	shop, err := bot.getShop(ctx, shopId)
 	if err != nil {
-		log.Errorf("[addShopItem] %s", err.Error())
+		log.WithObjects(ctx, user, err).WithFields(logrus.Fields{"shop": shopId}).Error("error fetching shop")
 		return shop, ShopItem{}, err
 	}
-	user := LoadUser(ctx)
 	// onnly the correct user can press
 	if shop.Owner.Telegram.ID != user.Telegram.ID {
 		return shop, ShopItem{}, fmt.Errorf("not owner")
@@ -606,8 +617,9 @@ func (bot *TipBot) addShopItem(ctx intercept.Context, shopId string) (*Shop, Sho
 // addShopItemPhoto is invoked when the users sends a photo as a new item
 func (bot *TipBot) addShopItemPhoto(ctx intercept.Context) (intercept.Context, error) {
 	m := ctx.Message()
-	log.Debugf("[addShopItemPhoto] <Photo>")
 	user := LoadUser(ctx)
+	log.WithObjects(ctx, user).WithFields(logrus.Fields{"func": "addShopItemPhoto", "module": "telegram"}).Debug("adding shop item photo")
+
 	if user.Wallet == nil {
 		return ctx, errors.Create(errors.UserNoWalletError)
 	}
@@ -616,7 +628,7 @@ func (bot *TipBot) addShopItemPhoto(ctx intercept.Context) (intercept.Context, e
 	var state_shop Shop
 	err := json.Unmarshal([]byte(user.StateData), &state_shop)
 	if err != nil {
-		log.Errorf("[lnurlWithdrawHandlerWithdraw] Error: %s", err.Error())
+		log.WithObjects(ctx, user, err).WithFields(logrus.Fields{"func": "addShopItemPhoto", "module": "telegram"}).Errorf("error unmarshaling state")
 		bot.trySendMessage(m.Sender, Translate(ctx, "errorTryLaterMessage"), Translate(ctx, "errorTryLaterMessage"))
 		return ctx, err
 	}
@@ -650,7 +662,8 @@ func (bot *TipBot) addShopItemPhoto(ctx intercept.Context) (intercept.Context, e
 	bot.Cache.Set(shopView.ID, shopView, &store.Options{Expiration: 24 * time.Hour})
 	bot.displayShopItem(ctx, shopView.Message, shop)
 
-	log.Infof("[🛍 shop] %s added an item %s:%s.", user.GetUserStr(), shop.ID, item.ID)
+	log.WithObjects(ctx, user).WithFields(logrus.Fields{"func": "addShopItemPhoto", "module": "telegram", "shop": shop.ID, "item": item.ID}).
+		Infof("[🛍 shop] added new item")
 	return ctx, nil
 }
 
@@ -658,20 +671,22 @@ func (bot *TipBot) addShopItemPhoto(ctx intercept.Context) (intercept.Context, e
 // shopItemAddItemHandler is invoked when the user presses the new item button
 func (bot *TipBot) shopItemAddItemHandler(ctx intercept.Context) (intercept.Context, error) {
 	c := ctx.Callback()
-	log.Debugf("[shopItemAddItemHandler] %s", c.Data)
 	user := LoadUser(ctx)
+	logFields := ctx.Context.Value("fields").(logrus.Fields)
+	logFields["data"] = c.Data
+	log.WithObjects(ctx, user).WithFields(logFields).Debugf("new item")
 	if user.Wallet == nil {
 		return ctx, errors.Create(errors.UserNoWalletError)
 	}
 	shopView, err := bot.getUserShopview(ctx, user)
 	if err != nil {
-		log.Errorf("[shopItemAddItemHandler] %s", err.Error())
+		log.WithObjects(ctx, user, err).Errorf("error fetching shop view")
 		return ctx, err
 	}
 
 	shop, err := bot.getShop(ctx, shopView.ShopID)
 	if err != nil {
-		log.Errorf("[shopItemAddItemHandler] %s", err.Error())
+		log.WithObjects(ctx, user, err).Errorf("error fetching shop ")
 		return ctx, err
 	}
 
@@ -691,23 +706,23 @@ func (bot *TipBot) shopItemAddItemHandler(ctx intercept.Context) (intercept.Cont
 // addItemFileHandler is invoked when the users sends a new file for the item
 func (bot *TipBot) addItemFileHandler(ctx intercept.Context) (intercept.Context, error) {
 	m := ctx.Message()
-	log.Debugf("[addItemFileHandler] <File>")
 	user := LoadUser(ctx)
+
 	if user.Wallet == nil {
 		return ctx, errors.Create(errors.UserNoWalletError)
 	}
 	shopView, err := bot.getUserShopview(ctx, user)
 	if err != nil {
-		log.Errorf("[addItemFileHandler] %s", err.Error())
+		log.WithObjects(ctx, user, err).Errorf("error fetching shop view")
 		return ctx, err
 	}
 
 	shop, err := bot.getShop(ctx, shopView.ShopID)
 	if err != nil {
-		log.Errorf("[shopNewItemHandler] %s", err.Error())
+		log.WithObjects(ctx, user, err).Errorf("error fetching shop")
 		return ctx, err
 	}
-
+	log.WithObjects(ctx, user).WithFields(logrus.Fields{"func": "addItemFileHandler", "module": "telegram", "shop": shop.ID}).Debugf("adding new file")
 	itemID := user.StateData
 
 	item := shop.Items[itemID]
@@ -734,8 +749,9 @@ func (bot *TipBot) addItemFileHandler(ctx intercept.Context) (intercept.Context,
 		item.FileIDs = append(item.FileIDs, m.Sticker.FileID)
 		item.FileTypes = append(item.FileTypes, "sticker")
 	} else {
-		log.Errorf("[addItemFileHandler] no file found")
-		return ctx, errors.Create(errors.NoFileFoundError)
+		err = errors.Create(errors.NoFileFoundError)
+		log.WithObjects(ctx, user, err).Errorf("no file found")
+		return ctx, err
 	}
 	shop.Items[item.ID] = item
 
@@ -779,25 +795,28 @@ func (bot *TipBot) addItemFileHandler(ctx intercept.Context) (intercept.Context,
 	// 	bot.shopViewDeleteAllStatusMsgs(ctx, user)
 	// }()
 	bot.displayShopItem(ctx, shopView.Message, shop)
-	log.Infof("[🛍 shop] %s added a file to shop:item %s:%s.", user.GetUserStr(), shop.ID, item.ID)
+	log.WithObjects(ctx, user).WithFields(logrus.Fields{"func": "addItemFileHandler", "module": "telegram", "shop": shop.ID, "item": item.ID}).Infof("[🛍 shop] added file")
 	return ctx, nil
 }
 
 func (bot *TipBot) shopGetItemFilesHandler(ctx intercept.Context) (intercept.Context, error) {
 	c := ctx.Callback()
-	log.Debugf("[shopGetItemFilesHandler] %s", c.Data)
+	logFields := ctx.Context.Value("fields").(logrus.Fields)
+
 	user := LoadUser(ctx)
+	logFields["data"] = c.Data
+	log.WithObjects(ctx, user).WithFields(logFields).Debugf("buy item button clicked")
 	if user.Wallet == nil {
 		return ctx, errors.Create(errors.UserNoWalletError)
 	}
 	shopView, err := bot.getUserShopview(ctx, user)
 	if err != nil {
-		log.Errorf("[addItemFileHandler] %s", err.Error())
+		log.WithObjects(ctx, user, err).WithFields(logFields).Errorf("error fetching shop view")
 		return ctx, err
 	}
 	shop, err := bot.getShop(ctx, shopView.ShopID)
 	if err != nil {
-		log.Errorf("[shopGetItemFilesHandler] %s", err.Error())
+		log.WithObjects(ctx, user, err).WithFields(logFields).Errorf("error feching shop")
 		return ctx, err
 	}
 	itemID := c.Data
@@ -825,26 +844,32 @@ func (bot *TipBot) shopGetItemFilesHandler(ctx intercept.Context) (intercept.Con
 // shopConfirmBuyHandler is invoked when the user has confirmed to pay for an item
 func (bot *TipBot) shopConfirmBuyHandler(ctx intercept.Context) (intercept.Context, error) {
 	c := ctx.Callback()
-	log.Debugf("[shopConfirmBuyHandler] %s", c.Data)
 	user := LoadUser(ctx)
+	logFields := ctx.Context.Value("fields").(logrus.Fields)
+	logFields["data"] = c.Data
+	log.WithObjects(ctx, user).WithFields(logFields).Debugf("user confirmed to pay item")
 	if user.Wallet == nil {
 		return ctx, errors.Create(errors.UserNoWalletError)
 	}
 	shopView, err := bot.getUserShopview(ctx, user)
 	if err != nil {
-		log.Errorf("[shopConfirmBuyHandler] %s", err.Error())
+		log.WithObjects(ctx, user, err).WithFields(logFields).Errorf("error fetching shop view")
 		return ctx, err
 	}
 	shop, err := bot.getShop(ctx, shopView.ShopID)
 	if err != nil {
-		log.Errorf("[shopConfirmBuyHandler] %s", err.Error())
+		log.WithObjects(ctx, user, err).WithFields(logFields).Errorf("error fetching shop")
 		return ctx, err
 	}
+	logFields["shop_title"] = shop.Title
+	logFields["shop"] = shop.ID
 	itemID := c.Data
 	item := shop.Items[itemID]
+	logFields["item"] = item.ID
 	if item.Owner.ID != shop.Owner.ID {
-		log.Errorf("[shopConfirmBuyHandler] Owners do not match.")
-		return ctx, errors.Create(errors.NotShopOwnerError)
+		err = errors.Create(errors.NotShopOwnerError)
+		log.WithObjects(ctx, user, err).WithFields(logFields).Errorf("Owners do not match.")
+		return ctx, err
 	}
 	from := user
 	to := shop.Owner
@@ -854,9 +879,11 @@ func (bot *TipBot) shopConfirmBuyHandler(ctx intercept.Context) (intercept.Conte
 	toUserStr := GetUserStr(to.Telegram)
 	toUserStrMd := GetUserStrMd(to.Telegram)
 	amount := item.Price
+	logFields["amount"] = amount
 	if amount <= 0 {
-		log.Errorf("[shopConfirmBuyHandler] item has no price.")
-		return ctx, errors.Create(errors.InvalidAmountError)
+		err = errors.Create(errors.InvalidAmountError)
+		log.WithObjects(ctx, user, err).WithFields(logFields).Errorf("item has no price")
+		return ctx, err
 	}
 	transactionMemo := fmt.Sprintf("🛍 Shop from %s.", toUserStr)
 	t := NewTransaction(bot, from, to, amount, TransactionType("shop"))
@@ -866,7 +893,7 @@ func (bot *TipBot) shopConfirmBuyHandler(ctx intercept.Context) (intercept.Conte
 	if !success || err != nil {
 		// bot.trySendMessage(c.Sender, sendErrorMessage)
 		errmsg := fmt.Sprintf("[shop] Error: Transaction failed. %s", err.Error())
-		log.Errorln(errmsg)
+		log.WithObjects(ctx, user, err).WithFields(logFields).Errorln(errmsg)
 		ctx.Context = context.WithValue(ctx, "callback_response", i18n.Translate(user.Telegram.LanguageCode, "sendErrorMessage"))
 		// bot.trySendMessage(user.Telegram, i18n.Translate(user.Telegram.LanguageCode, "sendErrorMessage"), &tb.ReplyMarkup{})
 		return ctx, errors.New(errors.UnknownError, err)
@@ -876,29 +903,33 @@ func (bot *TipBot) shopConfirmBuyHandler(ctx intercept.Context) (intercept.Conte
 	if len(item.Title) > 0 {
 		shopItemTitle = fmt.Sprintf("%s", item.Title)
 	}
+	logFields["item_title"] = shopItemTitle
+
 	ctx.Context = context.WithValue(ctx, "callback_response", "🛍 Purchase successful.")
 	bot.trySendMessage(to.Telegram, fmt.Sprintf("🛍 Someone bought `%s` from your shop `%s` for `%d sat`.", str.MarkdownEscape(shopItemTitle), str.MarkdownEscape(shop.Title), amount))
 	bot.trySendMessage(from.Telegram, fmt.Sprintf("🛍 You bought `%s` from %s's shop `%s` for `%d sat`.", str.MarkdownEscape(shopItemTitle), toUserStrMd, str.MarkdownEscape(shop.Title), amount))
-	log.Infof("[🛍 shop] %s bought from %s shop: %s item: %s  for %d sat.", toUserStr, GetUserStr(to.Telegram), shop.Title, shopItemTitle, amount)
+	logFields["to_user"] = GetUserStr(to.Telegram)
+	log.WithObjects(ctx, user, err).WithFields(logFields).Infof("[🛍 shop] sold item")
 	bot.shopSendItemFilesToUser(ctx, user, itemID)
 	return ctx, nil
 }
 
 // shopSendItemFilesToUser is a handler function to send itemID's files to the user
 func (bot *TipBot) shopSendItemFilesToUser(ctx intercept.Context, toUser *lnbits.User, itemID string) {
-	log.Debugf("[shopSendItemFilesToUser] %s -> %s", GetUserStr(toUser.Telegram), itemID)
 	user := LoadUser(ctx)
+	logFields := logrus.Fields{"to_user": GetUserStr(toUser.Telegram), "item": itemID}
+	log.WithObjects(ctx, user).WithFields(logFields).Debugf("sending files to user")
 	if user.Wallet == nil {
 		return // errors.New("user has no wallet"), 0
 	}
 	shopView, err := bot.getUserShopview(ctx, user)
 	if err != nil {
-		log.Errorf("[shopGetItemFilesHandler] %s", err.Error())
+		log.WithObjects(ctx, user, err).WithFields(logFields).Errorf("[shopGetItemFilesHandler] %s", err.Error())
 		return
 	}
 	shop, err := bot.getShop(ctx, shopView.ShopID)
 	if err != nil {
-		log.Errorf("[addItemFileHandler] %s", err.Error())
+		log.WithObjects(ctx, user, err).WithFields(logFields).Errorf("[addItemFileHandler] %s", err.Error())
 		return
 	}
 	item := shop.Items[itemID]
@@ -908,7 +939,11 @@ func (bot *TipBot) shopSendItemFilesToUser(ctx intercept.Context, toUser *lnbits
 	for i, fileID := range item.FileIDs {
 		bot.sendFileByID(ctx, toUser.Telegram, fileID, item.FileTypes[i])
 	}
-	log.Infof("[🛍 shop] %s got %d items from %s's item %s (for %d sat).", user.GetUserStr(), len(item.FileIDs), GetUserStr(shop.Owner.Telegram), item.ID, item.Price)
+	logFields["amount"] = len(item.FileIDs)
+	logFields["from_user"] = GetUserStr(shop.Owner.Telegram)
+	logFields["item"] = item.ID
+	logFields["price"] = item.Price
+	log.WithObjects(ctx, user).WithFields(logFields).Infof("[🛍 shop] files sent to user")
 
 	// delete old shop and show again below the files
 	if shopView.Message != nil {
@@ -962,11 +997,11 @@ func (bot *TipBot) shopsHandlerCallback(ctx intercept.Context) (intercept.Contex
 // shopsHandler is invoked when the user enters /shops
 func (bot *TipBot) shopsHandler(ctx intercept.Context) (intercept.Context, error) {
 	m := ctx.Message()
-	log.Debugf("[shopsHandler] %s", GetUserStr(m.Sender))
 	if !m.Private() {
 		return ctx, errors.Create(errors.NoPrivateChatError)
 	}
 	user := LoadUser(ctx)
+	log.WithObjects(ctx, user).Debugf("invoked shops hanler")
 	shopOwner := user
 
 	// if the user in the command, i.e. /shops @user
@@ -982,7 +1017,7 @@ func (bot *TipBot) shopsHandler(ctx intercept.Context) (intercept.Context, error
 			var err error
 			toUserStrWithoutAt, err = getArgumentFromCommand(m.Text, 1)
 			if err != nil {
-				log.Errorln(err.Error())
+				log.WithObjects(ctx, user, err).Errorln("error reading args from command")
 				return ctx, err
 			}
 			toUserStrWithoutAt = strings.TrimPrefix(toUserStrWithoutAt, "@")
@@ -1010,14 +1045,15 @@ func (bot *TipBot) shopsHandler(ctx intercept.Context) (intercept.Context, error
 	}
 
 	if shopOwner == nil {
-		log.Error("[shopsHandler] shopOwner is nil")
-		return ctx, errors.Create(errors.ShopNoOwnerError)
+		err := errors.Create(errors.ShopNoOwnerError)
+		log.WithObjects(ctx, user, err).Error("[shopsHandler] shopOwner is nil")
+		return ctx, err
 	}
 	shops, err := bot.getUserShops(ctx, shopOwner)
 	if err != nil && user.Telegram.ID == shopOwner.Telegram.ID {
 		shops, err = bot.initUserShops(ctx, user)
 		if err != nil {
-			log.Errorf("[shopsHandler] %s", err.Error())
+			log.WithObjects(ctx, user, err).Errorf("failed initializing user shops")
 			return ctx, err
 		}
 	}
@@ -1032,7 +1068,7 @@ func (bot *TipBot) shopsHandler(ctx intercept.Context) (intercept.Context, error
 	for _, shopId := range shops.Shops {
 		shop, err := bot.getShop(ctx, shopId)
 		if err != nil {
-			log.Errorf("[shopsHandler] %s", err.Error())
+			log.WithObjects(ctx, user, err).Errorf("error fetching shop")
 			return ctx, err
 		}
 		shopTitles += fmt.Sprintf("\n· %s (%d items)", str.MarkdownEscape(shop.Title), len(shop.Items))
@@ -1104,8 +1140,8 @@ func (bot *TipBot) shopsHandler(ctx intercept.Context) (intercept.Context, error
 // shopsDeleteShopBrowser is invoked when the user clicks on "delete shops" and makes a list of all shops
 func (bot *TipBot) shopsDeleteShopBrowser(ctx intercept.Context) (intercept.Context, error) {
 	c := ctx.Callback()
-	log.Debugf("[shopsDeleteShopBrowser] %s", c.Data)
 	user := LoadUser(ctx)
+	log.WithObjects(ctx, user).Debugf("[shopsDeleteShopBrowser] %s", c.Data)
 	shops, err := bot.getUserShops(ctx, user)
 	if err != nil {
 		return ctx, err
@@ -1128,7 +1164,7 @@ func (bot *TipBot) shopsDeleteShopBrowser(ctx intercept.Context) (intercept.Cont
 
 func (bot *TipBot) shopsAskDeleteAllShopsHandler(ctx intercept.Context) (intercept.Context, error) {
 	c := ctx.Callback()
-	log.Debugf("[shopsAskDeleteAllShopsHandler] %s", c.Data)
+	log.WithObjects(ctx).Debugf("[shopsAskDeleteAllShopsHandler] %s", c.Data)
 	shopResetShopButton := shopKeyboard.Data("⚠️ Delete all shops", "shops_reset", c.Data)
 	buttons := []tb.Row{
 		shopKeyboard.Row(shopResetShopButton),
@@ -1144,8 +1180,8 @@ func (bot *TipBot) shopsAskDeleteAllShopsHandler(ctx intercept.Context) (interce
 // shopsLinkShopBrowser is invoked when the user clicks on "shop links" and makes a list of all shops
 func (bot *TipBot) shopsLinkShopBrowser(ctx intercept.Context) (intercept.Context, error) {
 	c := ctx.Callback()
-	log.Debugf("[shopsLinkShopBrowser] %s", c.Data)
 	user := LoadUser(ctx)
+	log.WithObjects(ctx, user).Debugf("[shopsLinkShopBrowser] %s", c.Data)
 	shops, err := bot.getUserShops(ctx, user)
 	if err != nil {
 		return ctx, err
@@ -1167,7 +1203,7 @@ func (bot *TipBot) shopsLinkShopBrowser(ctx intercept.Context) (intercept.Contex
 // shopSelectLink is invoked when the user has chosen a shop to get the link of
 func (bot *TipBot) shopSelectLink(ctx intercept.Context) (intercept.Context, error) {
 	c := ctx.Callback()
-	log.Debugf("[shopSelectLink] %s", c.Data)
+	log.WithObjects(ctx).Debugf("[shopSelectLink] %s", c.Data)
 	shop, _ := bot.getShop(ctx, c.Data)
 	if shop.Owner.Telegram.ID != c.Sender.ID {
 		return ctx, errors.Create(errors.UnknownError)
@@ -1179,8 +1215,8 @@ func (bot *TipBot) shopSelectLink(ctx intercept.Context) (intercept.Context, err
 // shopsLinkShopBrowser is invoked when the user clicks on "shop links" and makes a list of all shops
 func (bot *TipBot) shopsRenameShopBrowser(ctx intercept.Context) (intercept.Context, error) {
 	c := ctx.Callback()
-	log.Debugf("[shopsRenameShopBrowser] %s", c.Data)
 	user := LoadUser(ctx)
+	log.WithObjects(ctx, user).Debugf("[shopsRenameShopBrowser] %s", c.Data)
 	shops, err := bot.getUserShops(ctx, user)
 	if err != nil {
 		return ctx, err
@@ -1202,8 +1238,8 @@ func (bot *TipBot) shopsRenameShopBrowser(ctx intercept.Context) (intercept.Cont
 // shopSelectLink is invoked when the user has chosen a shop to get the link of
 func (bot *TipBot) shopSelectRename(ctx intercept.Context) (intercept.Context, error) {
 	c := ctx.Callback()
-	log.Debugf("[shopSelectRename] %s", c.Data)
 	user := LoadUser(ctx)
+	log.WithObjects(ctx, user).Debugf("[shopSelectRename] %s", c.Data)
 	shop, _ := bot.getShop(ctx, c.Data)
 	if shop.Owner.Telegram.ID != c.Sender.ID {
 		return ctx, errors.Create(errors.UnknownError)
@@ -1217,11 +1253,11 @@ func (bot *TipBot) shopSelectRename(ctx intercept.Context) (intercept.Context, e
 // shopsDescriptionHandler is invoked when the user clicks on "description" to set a shop description
 func (bot *TipBot) shopsDescriptionHandler(ctx intercept.Context) (intercept.Context, error) {
 	c := ctx.Callback()
-	log.Debugf("[shopsDescriptionHandler] %s", c.Data)
 	user := LoadUser(ctx)
+	log.WithObjects(ctx, user).Debugf("[shopsDescriptionHandler] %s", c.Data)
 	shops, err := bot.getUserShops(ctx, user)
 	if err != nil {
-		log.Errorf("[shopsDescriptionHandler] %s", err.Error())
+		log.WithObjects(ctx, user, err).Errorf("[shopsDescriptionHandler] %s", err.Error())
 		return ctx, err
 	}
 	SetUserState(user, bot, lnbits.UserEnterShopsDescription, shops.ID)
@@ -1232,11 +1268,11 @@ func (bot *TipBot) shopsDescriptionHandler(ctx intercept.Context) (intercept.Con
 // enterShopsDescriptionHandler is invoked when the user enters the shop title
 func (bot *TipBot) enterShopsDescriptionHandler(ctx intercept.Context) (intercept.Context, error) {
 	m := ctx.Message()
-	log.Debugf("[enterShopsDescriptionHandler] %s", m.Text)
 	user := LoadUser(ctx)
+	log.WithObjects(ctx, user).Debugf("[enterShopsDescriptionHandler] %s", m.Text)
 	shops, err := bot.getUserShops(ctx, user)
 	if err != nil {
-		log.Errorf("[enterShopsDescriptionHandler] %s", err.Error())
+		log.WithObjects(ctx, user, err).Errorf("[enterShopsDescriptionHandler] %s", err.Error())
 		return ctx, err
 	}
 	if shops.Owner.Telegram.ID != m.Sender.ID {
@@ -1272,11 +1308,11 @@ func (bot *TipBot) enterShopsDescriptionHandler(ctx intercept.Context) (intercep
 // shopsResetHandler is invoked when the user clicks button to reset shops completely
 func (bot *TipBot) shopsResetHandler(ctx intercept.Context) (intercept.Context, error) {
 	c := ctx.Callback()
-	log.Debugf("[shopsResetHandler] %s", c.Data)
 	user := LoadUser(ctx)
+	log.WithObjects(ctx, user).Debugf("[shopsResetHandler] %s", c.Data)
 	shops, err := bot.getUserShops(ctx, user)
 	if err != nil {
-		log.Errorf("[shopsResetHandler] %s", err.Error())
+		log.WithObjects(ctx, user, err).Errorf("[shopsResetHandler] %s", err.Error())
 		return ctx, err
 	}
 	if shops.Owner.Telegram.ID != c.Sender.ID {
@@ -1294,9 +1330,9 @@ func (bot *TipBot) shopsResetHandler(ctx intercept.Context) (intercept.Context, 
 // shopSelect is invoked when the user has selected a shop to browse
 func (bot *TipBot) shopSelect(ctx intercept.Context) (intercept.Context, error) {
 	c := ctx.Callback()
-	log.Debugf("[shopSelect] %s", c.Data)
 	shop, _ := bot.getShop(ctx, c.Data)
 	user := LoadUser(ctx)
+	log.WithObjects(ctx, user).Debugf("[shopSelect] %s", c.Data)
 	shopView, err := bot.getUserShopview(ctx, user)
 	if err != nil {
 		shopView = ShopView{
@@ -1318,7 +1354,7 @@ func (bot *TipBot) shopSelect(ctx intercept.Context) (intercept.Context, error) 
 	// 	shopMessage = bot.tryEditMessage(c.Message, "There are no items in this shop yet.", bot.shopMenu(ctx, shop, &ShopItem{}))
 	// }
 	shopView.Message = shopMessage
-	log.Infof("[🛍 shop] %s erntering shop %s.", GetUserStr(user.Telegram), shop.ID)
+	log.WithObjects(ctx, user, err).Infof("[🛍 shop] %s erntering shop %s.", GetUserStr(user.Telegram), shop.ID)
 	ctx.Context = context.WithValue(ctx, "callback_response", fmt.Sprintf("🛍 You are browsing %s", shop.Title))
 	return ctx, bot.Cache.Set(shopView.ID, shopView, &store.Options{Expiration: 24 * time.Hour})
 }
@@ -1326,9 +1362,9 @@ func (bot *TipBot) shopSelect(ctx intercept.Context) (intercept.Context, error) 
 // shopSelectDelete is invoked when the user has chosen a shop to delete
 func (bot *TipBot) shopSelectDelete(ctx intercept.Context) (intercept.Context, error) {
 	c := ctx.Callback()
-	log.Debugf("[shopSelectDelete] %s", c.Data)
 	shop, _ := bot.getShop(ctx, c.Data)
 	user := LoadUser(ctx)
+	log.WithObjects(ctx, user).Debugf("[shopSelectDelete] %s", c.Data)
 	shops, err := bot.getUserShops(ctx, user)
 	if err != nil {
 		return ctx, err
@@ -1349,7 +1385,7 @@ func (bot *TipBot) shopSelectDelete(ctx intercept.Context) (intercept.Context, e
 	// then, delete shop
 	runtime.IgnoreError(shop.Delete(shop, bot.ShopBunt))
 
-	log.Infof("[🛍 shop] %s deleted shop %s.", GetUserStr(user.Telegram), shop.ID)
+	log.WithObjects(ctx, user).Infof("[🛍 shop] %s deleted shop %s.", GetUserStr(user.Telegram), shop.ID)
 	// then update buttons
 	return bot.shopsDeleteShopBrowser(ctx)
 }
@@ -1357,8 +1393,8 @@ func (bot *TipBot) shopSelectDelete(ctx intercept.Context) (intercept.Context, e
 // shopsBrowser makes a button list of all shops the user can browse
 func (bot *TipBot) shopsBrowser(ctx intercept.Context) (intercept.Context, error) {
 	c := ctx.Callback()
-	log.Debugf("[shopsBrowser] %s", c.Data)
 	user := LoadUser(ctx)
+	log.WithObjects(ctx, user).Debugf("[shopsBrowser] %s", c.Data)
 	shopView, err := bot.getUserShopview(ctx, user)
 	if err != nil {
 		return ctx, err
@@ -1387,8 +1423,8 @@ func (bot *TipBot) shopsBrowser(ctx intercept.Context) (intercept.Context, error
 // shopItemSettingsHandler is invoked when the user presses the shop settings button
 func (bot *TipBot) shopSettingsHandler(ctx intercept.Context) (intercept.Context, error) {
 	c := ctx.Callback()
-	log.Debugf("[shopSettingsHandler] %s", c.Data)
 	user := LoadUser(ctx)
+	log.WithObjects(ctx, user).Debugf("[shopSettingsHandler] %s", c.Data)
 	shopView, err := bot.getUserShopview(ctx, user)
 	if err != nil {
 		return ctx, err
@@ -1398,8 +1434,9 @@ func (bot *TipBot) shopSettingsHandler(ctx intercept.Context) (intercept.Context
 		return ctx, err
 	}
 	if shops.ID != c.Data || shops.Owner.Telegram.ID != user.Telegram.ID {
-		log.Error("[shopSettingsHandler] item id mismatch")
-		return ctx, errors.Create(errors.ItemIdMismatchError)
+		err = errors.Create(errors.ItemIdMismatchError)
+		log.WithObjects(ctx, user, err).Error("[shopSettingsHandler] item id mismatch")
+		return ctx, err
 	}
 	_, err = bot.tryEditMessage(shopView.Message, shopView.Message.Text, bot.shopsSettingsMenu(ctx, shops))
 	return ctx, err
@@ -1408,11 +1445,11 @@ func (bot *TipBot) shopSettingsHandler(ctx intercept.Context) (intercept.Context
 // shopNewShopHandler is invoked when the user presses the new shop button
 func (bot *TipBot) shopNewShopHandler(ctx intercept.Context) (intercept.Context, error) {
 	c := ctx.Callback()
-	log.Debugf("[shopNewShopHandler] %s", c.Data)
 	user := LoadUser(ctx)
+	log.WithObjects(ctx, user).Debugf("[shopNewShopHandler] %s", c.Data)
 	shops, err := bot.getUserShops(ctx, user)
 	if err != nil {
-		log.Errorf("[shopNewShopHandler] %s", err.Error())
+		log.WithObjects(ctx, user, err).Errorf("[shopNewShopHandler] %s", err.Error())
 		return ctx, err
 	}
 	if len(shops.Shops) >= shops.MaxShops {
@@ -1429,8 +1466,8 @@ func (bot *TipBot) shopNewShopHandler(ctx intercept.Context) (intercept.Context,
 // enterShopTitleHandler is invoked when the user enters the shop title
 func (bot *TipBot) enterShopTitleHandler(ctx intercept.Context) (intercept.Context, error) {
 	m := ctx.Message()
-	log.Debugf("[enterShopTitleHandler] %s", m.Text)
 	user := LoadUser(ctx)
+	log.WithObjects(ctx, user).Debugf("[enterShopTitleHandler] %s", m.Text)
 	// read item from user.StateData
 	shop, err := bot.getShop(ctx, user.StateData)
 	if err != nil {
@@ -1463,9 +1500,9 @@ func (bot *TipBot) enterShopTitleHandler(ctx intercept.Context) (intercept.Conte
 	// }()
 	ctx, err = bot.shopsHandler(ctx)
 	if err != nil {
-		log.Errorf("[shop] failed shopshandler")
+		log.WithObjects(ctx, user, err).Errorf("[shop] failed shopshandler")
 	}
 	bot.tryDeleteMessage(m)
-	log.Infof("[🛍 shop] %s added new shop %s.", GetUserStr(user.Telegram), shop.ID)
+	log.WithObjects(ctx, user).Infof("[🛍 shop] %s added new shop %s.", GetUserStr(user.Telegram), shop.ID)
 	return ctx, nil
 }

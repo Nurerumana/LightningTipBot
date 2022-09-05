@@ -48,7 +48,8 @@ func (bot TipBot) registerHandlerWithInterceptor(h InterceptionWrapper) {
 		bot.handle(endpoint, intercept.WithHandler(h.Handler,
 			intercept.WithBefore(h.Interceptor.Before...),
 			intercept.WithAfter(h.Interceptor.After...),
-			intercept.WithDefer(h.Interceptor.OnDefer...), intercept.WithDefaultLogFields(h.Interceptor.Fields)))
+			intercept.WithDefer(h.Interceptor.OnDefer...),
+			intercept.WithDefaultLogFields(h.Interceptor.Fields)))
 	}
 }
 
@@ -97,8 +98,8 @@ func (bot TipBot) getHandler() []InterceptionWrapper {
 				},
 				Before: []intercept.Func{
 					bot.localizerInterceptor,
-					bot.logMessageInterceptor,
 					bot.loadUserInterceptor,
+					bot.logMessageInterceptor,
 					bot.lockInterceptor,
 				},
 				OnDefer: []intercept.Func{
@@ -118,8 +119,8 @@ func (bot TipBot) getHandler() []InterceptionWrapper {
 				Before: []intercept.Func{
 					bot.requirePrivateChatInterceptor,
 					bot.localizerInterceptor,
-					bot.logMessageInterceptor,
 					bot.loadUserInterceptor,
+					bot.logMessageInterceptor,
 					bot.lockInterceptor,
 				},
 				OnDefer: []intercept.Func{
@@ -138,8 +139,8 @@ func (bot TipBot) getHandler() []InterceptionWrapper {
 				},
 				Before: []intercept.Func{
 					bot.localizerInterceptor,
-					bot.logMessageInterceptor,
 					bot.requireUserInterceptor,
+					bot.logMessageInterceptor,
 					bot.loadReplyToInterceptor,
 					bot.lockInterceptor,
 				},
@@ -160,8 +161,8 @@ func (bot TipBot) getHandler() []InterceptionWrapper {
 				Before: []intercept.Func{
 					bot.requirePrivateChatInterceptor,
 					bot.localizerInterceptor,
-					bot.logMessageInterceptor,
 					bot.requireUserInterceptor,
+					bot.logMessageInterceptor,
 					bot.lockInterceptor,
 				},
 				OnDefer: []intercept.Func{
@@ -181,8 +182,8 @@ func (bot TipBot) getHandler() []InterceptionWrapper {
 				Before: []intercept.Func{
 					bot.requirePrivateChatInterceptor,
 					bot.localizerInterceptor,
-					bot.logMessageInterceptor,
 					bot.requireUserInterceptor,
+					bot.logMessageInterceptor,
 					bot.lockInterceptor,
 				},
 				OnDefer: []intercept.Func{
@@ -202,8 +203,8 @@ func (bot TipBot) getHandler() []InterceptionWrapper {
 				Before: []intercept.Func{
 					bot.requirePrivateChatInterceptor,
 					bot.localizerInterceptor,
-					bot.logMessageInterceptor,
 					bot.requireUserInterceptor,
+					bot.logMessageInterceptor,
 					bot.lockInterceptor,
 				},
 				OnDefer: []intercept.Func{
@@ -241,8 +242,8 @@ func (bot TipBot) getHandler() []InterceptionWrapper {
 					"path":   "/shops",
 				},
 				Before: []intercept.Func{
-					bot.logMessageInterceptor,
 					bot.requireUserInterceptor,
+					bot.logMessageInterceptor,
 					bot.loadUserInterceptor,
 					bot.lockInterceptor,
 				},
@@ -261,8 +262,8 @@ func (bot TipBot) getHandler() []InterceptionWrapper {
 				},
 				Before: []intercept.Func{
 					bot.localizerInterceptor,
-					bot.logMessageInterceptor,
 					bot.requireUserInterceptor,
+					bot.logMessageInterceptor,
 					bot.loadUserInterceptor,
 					bot.lockInterceptor,
 				},
@@ -282,8 +283,8 @@ func (bot TipBot) getHandler() []InterceptionWrapper {
 				Before: []intercept.Func{
 					bot.requirePrivateChatInterceptor,
 					bot.localizerInterceptor,
-					bot.logMessageInterceptor,
 					bot.requireUserInterceptor,
+					bot.logMessageInterceptor,
 					bot.lockInterceptor,
 				},
 				OnDefer: []intercept.Func{
@@ -302,8 +303,8 @@ func (bot TipBot) getHandler() []InterceptionWrapper {
 				},
 				Before: []intercept.Func{
 					bot.localizerInterceptor,
-					bot.logMessageInterceptor,
 					bot.requireUserInterceptor,
+					bot.logMessageInterceptor,
 					bot.loadReplyToInterceptor,
 					bot.lockInterceptor,
 				},
@@ -323,8 +324,8 @@ func (bot TipBot) getHandler() []InterceptionWrapper {
 				},
 				Before: []intercept.Func{
 					bot.localizerInterceptor,
-					bot.logMessageInterceptor,
 					bot.requireUserInterceptor,
+					bot.logMessageInterceptor,
 					bot.loadReplyToInterceptor,
 					bot.lockInterceptor,
 				},
@@ -364,8 +365,8 @@ func (bot TipBot) getHandler() []InterceptionWrapper {
 				Before: []intercept.Func{
 					bot.requirePrivateChatInterceptor,
 					bot.localizerInterceptor,
-					bot.logMessageInterceptor,
 					bot.requireUserInterceptor,
+					bot.logMessageInterceptor,
 				}},
 		},
 		{
@@ -419,8 +420,8 @@ func (bot TipBot) getHandler() []InterceptionWrapper {
 				},
 				Before: []intercept.Func{
 					bot.localizerInterceptor,
-					bot.logMessageInterceptor,
 					bot.requireUserInterceptor,
+					bot.logMessageInterceptor,
 					bot.lockInterceptor,
 				},
 				OnDefer: []intercept.Func{
@@ -439,8 +440,8 @@ func (bot TipBot) getHandler() []InterceptionWrapper {
 				},
 				Before: []intercept.Func{
 					bot.localizerInterceptor,
-					bot.logMessageInterceptor,
 					bot.requireUserInterceptor,
+					bot.logMessageInterceptor,
 					bot.lockInterceptor,
 				},
 				OnDefer: []intercept.Func{
@@ -459,8 +460,8 @@ func (bot TipBot) getHandler() []InterceptionWrapper {
 				},
 				Before: []intercept.Func{
 					bot.localizerInterceptor,
-					bot.logMessageInterceptor,
 					bot.loadUserInterceptor,
+					bot.logMessageInterceptor,
 					bot.lockInterceptor,
 				},
 				OnDefer: []intercept.Func{
@@ -479,8 +480,8 @@ func (bot TipBot) getHandler() []InterceptionWrapper {
 				},
 				Before: []intercept.Func{
 					bot.localizerInterceptor,
-					bot.logMessageInterceptor,
 					bot.loadUserInterceptor,
+					bot.logMessageInterceptor,
 					bot.lockInterceptor,
 				},
 				OnDefer: []intercept.Func{
@@ -499,8 +500,8 @@ func (bot TipBot) getHandler() []InterceptionWrapper {
 				},
 				Before: []intercept.Func{
 					bot.localizerInterceptor,
-					bot.logMessageInterceptor,
 					bot.requireUserInterceptor,
+					bot.logMessageInterceptor,
 					bot.lockInterceptor,
 				},
 				OnDefer: []intercept.Func{
@@ -520,8 +521,8 @@ func (bot TipBot) getHandler() []InterceptionWrapper {
 				Before: []intercept.Func{
 					bot.requirePrivateChatInterceptor,
 					bot.localizerInterceptor,
-					bot.logMessageInterceptor,
 					bot.requireUserInterceptor,
+					bot.logMessageInterceptor,
 					bot.lockInterceptor,
 				},
 				OnDefer: []intercept.Func{
@@ -541,8 +542,8 @@ func (bot TipBot) getHandler() []InterceptionWrapper {
 				Before: []intercept.Func{
 					bot.requirePrivateChatInterceptor,
 					bot.localizerInterceptor,
-					bot.logMessageInterceptor,
 					bot.requireUserInterceptor,
+					bot.logMessageInterceptor,
 					bot.lockInterceptor,
 				},
 				OnDefer: []intercept.Func{
@@ -562,8 +563,8 @@ func (bot TipBot) getHandler() []InterceptionWrapper {
 				Before: []intercept.Func{
 					bot.requirePrivateChatInterceptor,
 					bot.localizerInterceptor,
-					bot.logMessageInterceptor,
 					bot.requireUserInterceptor,
+					bot.logMessageInterceptor,
 					bot.lockInterceptor,
 				},
 				OnDefer: []intercept.Func{
@@ -583,8 +584,8 @@ func (bot TipBot) getHandler() []InterceptionWrapper {
 				Before: []intercept.Func{
 					bot.requirePrivateChatInterceptor,
 					bot.localizerInterceptor,
-					bot.logMessageInterceptor,
 					bot.requireUserInterceptor,
+					bot.logMessageInterceptor,
 					bot.lockInterceptor,
 				},
 				OnDefer: []intercept.Func{
@@ -604,8 +605,8 @@ func (bot TipBot) getHandler() []InterceptionWrapper {
 				},
 				Before: []intercept.Func{
 					bot.localizerInterceptor,
-					bot.logMessageInterceptor,
 					bot.requireUserInterceptor,
+					bot.logMessageInterceptor,
 					bot.lockInterceptor,
 				},
 				OnDefer: []intercept.Func{
@@ -625,8 +626,8 @@ func (bot TipBot) getHandler() []InterceptionWrapper {
 				Before: []intercept.Func{
 					bot.requirePrivateChatInterceptor,
 					bot.localizerInterceptor,
-					bot.logMessageInterceptor,
 					bot.startUserInterceptor,
+					bot.logMessageInterceptor,
 					bot.lockInterceptor,
 				},
 				OnDefer: []intercept.Func{
@@ -666,8 +667,8 @@ func (bot TipBot) getHandler() []InterceptionWrapper {
 				Before: []intercept.Func{
 					bot.requirePrivateChatInterceptor,
 					bot.localizerInterceptor,
-					bot.logMessageInterceptor,
 					bot.requireUserInterceptor,
+					bot.logMessageInterceptor,
 					bot.lockInterceptor,
 				},
 				OnDefer: []intercept.Func{
@@ -686,8 +687,9 @@ func (bot TipBot) getHandler() []InterceptionWrapper {
 				},
 				Before: []intercept.Func{
 					bot.requirePrivateChatInterceptor,
+					bot.loadUserInterceptor,
 					bot.logMessageInterceptor,
-					bot.loadUserInterceptor}},
+				}},
 		},
 		{
 			Endpoints: []interface{}{tb.OnText},
@@ -701,8 +703,8 @@ func (bot TipBot) getHandler() []InterceptionWrapper {
 				Before: []intercept.Func{
 					bot.requirePrivateChatInterceptor, // Respond to any text only in private chat
 					bot.localizerInterceptor,
-					bot.logMessageInterceptor,
 					bot.loadUserInterceptor, // need to use loadUserInterceptor instead of requireUserInterceptor, because user might not be registered yet
+					bot.logMessageInterceptor,
 					bot.lockInterceptor,
 				},
 				OnDefer: []intercept.Func{

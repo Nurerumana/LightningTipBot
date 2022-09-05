@@ -5,6 +5,7 @@ import (
 	"crypto/sha1"
 	"encoding/base64"
 	"fmt"
+	"github.com/LightningTipBot/LightningTipBot/internal/log"
 	"os"
 	"reflect"
 	"runtime/debug"
@@ -20,7 +21,7 @@ import (
 	"github.com/LightningTipBot/LightningTipBot/internal/storage"
 	"github.com/tidwall/buntdb"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 
 	"github.com/LightningTipBot/LightningTipBot/internal/lnbits"
 	tb "gopkg.in/lightningtipbot/telebot.v3"
@@ -59,7 +60,7 @@ func ColumnMigrationTasks(db *gorm.DB) error {
 		if err != nil {
 			panic(err)
 		}
-		log.Info("Running anon_id database migrations ...")
+		logrus.Info("Running anon_id database migrations ...")
 		// run the migration on anon_id
 		err = database.MigrateAnonIdInt32Hash(db)
 	}
@@ -71,7 +72,7 @@ func ColumnMigrationTasks(db *gorm.DB) error {
 		if err != nil {
 			panic(err)
 		}
-		log.Info("Running anon_id_sha256 database migrations ...")
+		logrus.Info("Running anon_id_sha256 database migrations ...")
 		// run the migration on anon_id
 		err = database.MigrateAnonIdSha265Hash(db)
 	}
@@ -83,7 +84,7 @@ func ColumnMigrationTasks(db *gorm.DB) error {
 		if err != nil {
 			panic(err)
 		}
-		log.Info("Running UUID database migrations ...")
+		logrus.Info("Running UUID database migrations ...")
 		// run the migration on uuid
 		err = database.MigrateUUIDSha265Hash(db)
 	}
@@ -166,8 +167,7 @@ func GetLnbitsUser(u *tb.User, bot TipBot) (*lnbits.User, error) {
 	user := &lnbits.User{Name: strconv.FormatInt(u.ID, 10)}
 	tx := bot.DB.Users.First(user)
 	if tx.Error != nil {
-		errmsg := fmt.Sprintf("[GetUser] Couldn't fetch %s from Database: %s", GetUserStr(u), tx.Error.Error())
-		log.Warnln(errmsg)
+
 		user.Telegram = u
 		return user, tx.Error
 	}
@@ -179,8 +179,10 @@ func GetLnbitsUserWithSettings(u *tb.User, bot TipBot) (*lnbits.User, error) {
 	user := &lnbits.User{Name: strconv.FormatInt(u.ID, 10)}
 	tx := bot.DB.Users.Preload("Settings").First(user)
 	if tx.Error != nil {
-		errmsg := fmt.Sprintf("[GetLnbitsUserWithSettings] Couldn't fetch %s from Database: %s", GetUserStr(u), tx.Error.Error())
-		log.Warnln(errmsg)
+		log.WithObjects(user, tx.Error).WithFields(logrus.Fields{
+			"module": "database",
+			"func":   "GetLnbitsUserWithSettings",
+		}).Warnln(fmt.Sprintf("Couldn't preload user settings from Database"))
 		user.Telegram = u
 		return user, tx.Error
 	}
@@ -206,7 +208,10 @@ func GetUser(u *tb.User, bot TipBot) (*lnbits.User, error) {
 		user.Telegram = u
 		err = UpdateUserRecord(user, bot)
 		if err != nil {
-			log.Warnln(fmt.Sprintf("[UpdateUserRecord] %s", err.Error()))
+			log.WithObjects(user, err).WithFields(logrus.Fields{
+				"module": "database",
+				"func":   "GetUser",
+			}).Warnln(fmt.Sprintf("UpdateUserRecord failed"))
 		}
 	}
 	return user, err
@@ -229,7 +234,7 @@ func debugStack() {
 		hasher.Write(stack)
 		sha := base64.URLEncoding.EncodeToString(hasher.Sum(nil))
 		fo, err := os.Create(fmt.Sprintf("trace_%s.txt", sha))
-		log.Infof("[debugStack] ⚠️ Writing stack trace to %s", fmt.Sprintf("trace_%s.txt", sha))
+		logrus.Infof("[debugStack] ⚠️ Writing stack trace to %s", fmt.Sprintf("trace_%s.txt", sha))
 		if err != nil {
 			panic(err)
 		}
@@ -248,61 +253,38 @@ func debugStack() {
 		}
 	}()
 }
+
 func UpdateUserRecord(user *lnbits.User, bot TipBot) error {
 	user.UpdatedAt = time.Now()
-
+	logFields := logrus.Fields{
+		"module": "database",
+		"func":   "UpdateUserRecord",
+	}
 	// There is a weird bug that makes the AnonID vanish. This is a workaround.
 	// TODO -- Remove this after empty anon id bug is identified
 	if user.AnonIDSha256 == "" {
 		debugStack()
 		user.AnonIDSha256 = user.AnonIdSha256()
-		log.WithFields(log.Fields{
-			"module":    "database",
-			"func":      "UpdateUserRecord",
-			"user":      user.GetUserStr(),
-			"user_id":   user.ID,
-			"wallet_id": user.Wallet.ID,
-			"annon_id":  user.AnonIDSha256,
-		}).Errorf("Setting AnonIDSha256")
+		log.WithObjects(user).WithFields(logFields).WithField("annon_id", user.AnonIDSha256).Errorf("Setting AnonIDSha256")
 	}
 	// TODO -- Remove this after empty anon id bug is identified
 	if user.AnonID == "" {
 		debugStack()
 		user.AnonID = fmt.Sprint(str.Int32Hash(user.ID))
-		log.WithFields(log.Fields{
-			"module":    "database",
-			"func":      "UpdateUserRecord",
-			"user":      user.GetUserStr(),
-			"user_id":   user.ID,
-			"wallet_id": user.Wallet.ID,
-			"annon_id":  user.AnonID,
-		}).Errorf("Setting AnonID")
+		log.WithObjects(user).WithFields(logFields).WithField("annon_id", user.AnonID).Errorf("Setting AnonID")
 	}
 	// TODO -- Remove this after empty anon id bug is identified
 	if user.UUID == "" {
 		debugStack()
 		user.UUID = user.UUIDSha256()
-		log.WithFields(log.Fields{
-			"module":    "database",
-			"func":      "UpdateUserRecord",
-			"user":      user.GetUserStr(),
-			"user_id":   user.ID,
-			"wallet_id": user.Wallet.ID,
-			"annon_id":  user.UUID,
-		}).Errorf("Setting UUID")
+		log.WithObjects(user).WithFields(logFields).WithField("annon_id", user.UUID).Errorf("Setting UUID")
 	}
 
 	tx := bot.DB.Users.Save(user)
 	if tx.Error != nil {
 		return tx.Error
 	}
-	log.WithFields(log.Fields{
-		"module":    "database",
-		"func":      "UpdateUserRecord",
-		"user":      user.GetUserStr(),
-		"user_id":   user.ID,
-		"wallet_id": user.Wallet.ID,
-	}).Info("Updated records of user")
+	log.WithObjects(user).WithFields(logFields).Info("Updated records of user")
 	if bot.Cache.GoCacheStore != nil {
 		updateCachedUser(user, bot)
 	}

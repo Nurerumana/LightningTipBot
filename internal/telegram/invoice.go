@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/LightningTipBot/LightningTipBot/internal/log"
 	"strings"
 	"time"
 
@@ -14,7 +15,7 @@ import (
 
 	"github.com/LightningTipBot/LightningTipBot/internal"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 
 	"github.com/LightningTipBot/LightningTipBot/internal/i18n"
 	"github.com/LightningTipBot/LightningTipBot/internal/lnbits"
@@ -117,14 +118,10 @@ func (bot *TipBot) invoiceHandler(ctx intercept.Context) (intercept.Context, err
 		return ctx, errors.Create(errors.UserNoWalletError)
 	}
 
-	logfields := log.Fields{
-		"module":      "telegram",
-		"func":        "invoiceHandler",
-		"path":        "/invoice",
-		"user":        user.GetUserStr(),
-		"user_id":     user.ID,
-		"wallet_id":   user.Wallet.ID,
-		"telegram_id": user.Telegram.ID}
+	logfields := logrus.Fields{
+		"module": "telegram",
+		"func":   "invoiceHandler",
+		"path":   "/invoice"}
 
 	if m.Chat.Type != tb.ChatPrivate {
 		// delete message
@@ -153,22 +150,20 @@ func (bot *TipBot) invoiceHandler(ctx intercept.Context) (intercept.Context, err
 
 	creatingMsg := bot.trySendMessageEditable(m.Sender, Translate(ctx, "lnurlGettingUserMessage"))
 	logfields["amount"] = amount
-	log.WithFields(logfields).
-		Debugf("Creating invoice")
+	log.WithObjects(ctx, user).WithFields(logfields).Debugf("Creating invoice")
 	invoice, err := bot.createInvoiceWithEvent(ctx, user, amount, memo, InvoiceCallbackGeneric, "")
 	if err != nil {
 		errmsg := fmt.Sprintf("[/invoice] Could not create an invoice: %s", err.Error())
 		bot.tryEditMessage(creatingMsg, Translate(ctx, "errorTryLaterMessage"))
-		log.Errorln(errmsg)
+		log.WithObjects(ctx, user, err).WithFields(logfields).Errorln(errmsg)
 		return ctx, err
 	}
 	logfields["invoice"] = invoice.PaymentRequest
 	// create qr code
 	qr, err := qrcode.Encode(invoice.PaymentRequest, qrcode.Medium, 256)
 	if err != nil {
-		errmsg := fmt.Sprintf("[/invoice] Failed to create QR code for invoice: %s", err.Error())
 		bot.tryEditMessage(creatingMsg, Translate(ctx, "errorTryLaterMessage"))
-		log.WithFields(logfields).Errorln(errmsg)
+		log.WithObjects(ctx, user, err).WithFields(logfields).Errorln("Failed to create QR code for invoice")
 		return ctx, err
 	}
 
@@ -177,7 +172,7 @@ func (bot *TipBot) invoiceHandler(ctx intercept.Context) (intercept.Context, err
 
 	// send the invoice data to user
 	bot.trySendMessage(m.Sender, &tb.Photo{File: tb.File{FileReader: bytes.NewReader(qr)}, Caption: fmt.Sprintf("`%s`", invoice.PaymentRequest)})
-	log.WithFields(logfields).Printf("Incvoice created.")
+	log.WithObjects(ctx, user).WithFields(logfields).Printf("Incvoice created.")
 	return ctx, nil
 }
 
@@ -190,15 +185,9 @@ func (bot *TipBot) createInvoiceWithEvent(ctx context.Context, user *lnbits.User
 			Webhook: internal.Configuration.Lnbits.WebhookServer},
 		bot.Client)
 	if err != nil {
-		errmsg := fmt.Sprintf("[/invoice] Could not create an invoice: %s", err.Error())
-		logfields := log.Fields{
-			"module":      "telegram",
-			"func":        "createInvoiceWithEvent",
-			"user":        user.GetUserStr(),
-			"user_id":     user.ID,
-			"wallet_id":   user.Wallet.ID,
-			"telegram_id": user.Telegram.ID}
-		log.WithFields(logfields).Errorln(errmsg)
+		log.WithObjects(ctx, user, err).WithFields(logrus.Fields{
+			"module": "telegram",
+			"func":   "createInvoiceWithEvent"}).Errorln("Could not create an invoice")
 		return InvoiceEvent{}, err
 	}
 	invoiceEvent := InvoiceEvent{
@@ -222,7 +211,7 @@ func (bot *TipBot) notifyInvoiceReceivedEvent(event Event) {
 	_, err := bot.GetUserBalance(invoiceEvent.User)
 	if err != nil {
 		errmsg := fmt.Sprintf("could not get balance of user %s", GetUserStr(invoiceEvent.User.Telegram))
-		log.WithFields(log.Fields{"module": "telegram", "func": "notifyInvoiceReceivedEvent"}).Error(errmsg)
+		log.WithObjects(invoiceEvent.User, err).WithFields(logrus.Fields{"module": "telegram", "func": "notifyInvoiceReceivedEvent"}).Error(errmsg)
 	}
 
 	bot.trySendMessage(invoiceEvent.User.Telegram, fmt.Sprintf(i18n.Translate(invoiceEvent.User.Telegram.LanguageCode, "invoiceReceivedMessage"), invoiceEvent.Amount))
@@ -248,7 +237,7 @@ func (bot *TipBot) lnurlReceiveEvent(event Event) {
 	bot.notifyInvoiceReceivedEvent(invoiceEvent)
 	tx := &LNURLInvoice{Invoice: &Invoice{PaymentHash: invoiceEvent.PaymentHash}}
 	err := bot.Bunt.Get(tx)
-	log.WithFields(log.Fields{"module": "lnurl", "func": "lnurlReceiveEvent", "user": GetUserStr(invoiceEvent.User.Telegram), "amount": tx.Amount}).Debugf("Received invoice")
+	log.WithObjects(tx.User, err).WithFields(logrus.Fields{"module": "lnurl", "func": "lnurlReceiveEvent", "amount": tx.Amount}).Debugf("Received invoice")
 	if err == nil {
 		if len(tx.Comment) > 0 {
 			if len(tx.From) == 0 {

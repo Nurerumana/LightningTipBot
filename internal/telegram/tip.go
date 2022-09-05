@@ -3,6 +3,7 @@ package telegram
 import (
 	"context"
 	"fmt"
+	"github.com/LightningTipBot/LightningTipBot/internal/log"
 	"strings"
 	"time"
 
@@ -13,7 +14,7 @@ import (
 	"github.com/LightningTipBot/LightningTipBot/internal/str"
 
 	"github.com/LightningTipBot/LightningTipBot/internal/i18n"
-	log "github.com/sirupsen/logrus"
+	logrus "github.com/sirupsen/logrus"
 	tb "gopkg.in/lightningtipbot/telebot.v3"
 )
 
@@ -55,7 +56,11 @@ func (bot *TipBot) tipHandler(ctx intercept.Context) (intercept.Context, error) 
 		NewMessage(m, WithDuration(0, bot))
 		return ctx, errors.Create(errors.InvalidSyntaxError)
 	}
-
+	logFields := logrus.Fields{
+		"module": "telegram",
+		"func":   "tipHandler",
+		"path":   "/tip",
+	}
 	// get tip amount
 	amount, err := decodeAmountFromCommand(m.Text)
 	if err != nil || amount < 1 {
@@ -63,28 +68,13 @@ func (bot *TipBot) tipHandler(ctx intercept.Context) (intercept.Context, error) 
 		NewMessage(m, WithDuration(0, bot))
 		bot.trySendMessage(m.Sender, helpTipUsage(ctx, Translate(ctx, "tipValidAmountMessage")))
 		err = fmt.Errorf("%v: %v", errors.Create(errors.InvalidAmountError), err)
-		log.WithFields(log.Fields{
-			"module":    "telegram",
-			"func":      "tipHandler",
-			"path":      "/tip",
-			"user":      user.GetUserStr(),
-			"user_id":   user.ID,
-			"amount":    amount,
-			"wallet_id": user.Wallet.ID}).Warnln(err.Error())
+		log.WithObjects(ctx, user, err).WithFields(logFields).Warnln(err.Error())
 		return ctx, err
 	}
 
-	err = bot.parseCmdDonHandler(ctx)
+	err = bot.parseDonationCommandHandler(ctx)
 	if err == nil {
-		err = fmt.Errorf("invalid parseCmdDonHandler")
-		log.WithFields(log.Fields{
-			"module":    "telegram",
-			"func":      "tipHandler",
-			"path":      "/tip",
-			"user":      user.GetUserStr(),
-			"user_id":   user.ID,
-			"amount":    amount,
-			"wallet_id": user.Wallet.ID}).Warnln(err.Error())
+		log.WithObjects(ctx, user, err).WithFields(logFields).WithField("amount", amount).Warnln("failed parsing donation command")
 		return ctx, err
 	}
 	// TIP COMMAND IS VALID
@@ -103,29 +93,16 @@ func (bot *TipBot) tipHandler(ctx intercept.Context) (intercept.Context, error) 
 	fromUserStr := GetUserStr(from.Telegram)
 
 	if _, exists := bot.UserExists(to.Telegram); !exists {
-		log.WithFields(log.Fields{
-			"module":      "telegram",
-			"func":        "tipHandler",
-			"path":        "/tip",
-			"to_user":     toUserStr,
-			"to_user_id":  to.ID,
-			"user":        fromUserStr,
-			"user_id":     from.ID,
-			"wallet_id":   from.Wallet.ID,
-			"telegram_id": from.Telegram.ID}).Infof("User has no wallet.")
+		log.WithObjects(ctx, user).WithFields(logFields).WithFields(logrus.Fields{
+			"to_user":    toUserStr,
+			"to_user_id": to.ID}).Infof("User has no wallet.")
 		to, err = bot.CreateWalletForTelegramUser(to.Telegram)
 		if err != nil {
-			log.WithFields(log.Fields{
-				"module":       "faucet",
-				"func":         "acceptInlineFaucetHandler",
+			log.WithObjects(ctx, user, err).WithFields(logFields).WithFields(logrus.Fields{
 				"to_user":      GetUserStr(to.Telegram),
 				"to_user_id":   to.ID,
 				"to_wallet_id": to.Wallet.ID,
-				"user":         GetUserStr(from.Telegram),
-				"user_id":      from.ID,
-				"wallet_id":    from.Wallet.ID,
-				"error":        err.Error()},
-			).Errorln("Could not create wallet for user")
+			}).Errorln("Could not create wallet for user")
 			return ctx, err
 		}
 	}
@@ -148,33 +125,19 @@ func (bot *TipBot) tipHandler(ctx intercept.Context) (intercept.Context, error) 
 	if !success {
 		NewMessage(m, WithDuration(0, bot))
 		bot.trySendMessage(m.Sender, fmt.Sprintf("%s: %s", Translate(ctx, "tipErrorMessage"), Translate(ctx, "tipUndefinedErrorMsg")))
-		log.WithFields(log.Fields{
-			"module":      "telegram",
-			"func":        "tipHandler",
-			"path":        "/tip",
-			"to_user":     toUserStr,
-			"to_user_id":  to.ID,
-			"user":        fromUserStr,
-			"user_id":     from.ID,
-			"wallet_id":   from.Wallet.ID,
-			"error":       err.Error(),
-			"telegram_id": from.Telegram.ID}).Warnf("Transaction failed")
+		log.WithObjects(ctx, user, err).WithFields(logFields).WithFields(logrus.Fields{
+			"to_user":    toUserStr,
+			"to_user_id": to.ID,
+		}).Warnf("Transaction failed")
 		return ctx, err
 	}
 
 	// update tooltip if necessary
 	messageHasTip := tipTooltipHandler(m, bot, amount, to.Initialized)
 
-	log.WithFields(log.Fields{
-		"module":      "tip",
-		"func":        "tipHandler",
-		"to_user":     toUserStr,
-		"user":        fromUserStr,
-		"user_id":     user.ID,
-		"wallet_id":   user.Wallet.ID,
-		"amount":      amount,
-		"telegram_id": user.Telegram.ID,
-		"error":       err}).Info("created Tip")
+	log.WithObjects(ctx, user).WithFields(logFields).WithFields(logrus.Fields{
+		"to_user": toUserStr,
+		"amount":  amount}).Info("created Tip")
 
 	// notify users
 	bot.trySendMessage(from.Telegram, fmt.Sprintf(i18n.Translate(from.Telegram.LanguageCode, "tipSentMessage"), amount, toUserStrMd))

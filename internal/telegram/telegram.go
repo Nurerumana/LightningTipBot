@@ -2,12 +2,14 @@ package telegram
 
 import (
 	"fmt"
+	"github.com/LightningTipBot/LightningTipBot/internal/lnbits"
+	"github.com/LightningTipBot/LightningTipBot/internal/log"
 	"strconv"
 	"time"
 
 	"github.com/LightningTipBot/LightningTipBot/internal/rate"
 	"github.com/eko/gocache/store"
-	log "github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 	tb "gopkg.in/lightningtipbot/telebot.v3"
 )
 
@@ -25,12 +27,18 @@ func (bot TipBot) tryForwardMessage(to tb.Recipient, what tb.Editable, options .
 	// ChatId is used for the keyboard
 	chatId, err := bot.getChatIdFromRecipient(to)
 	if err != nil {
-		log.Errorf("[tryForwardMessage] error converting message recipient to int64: %v", err)
+		log.WithObjects(err).WithFields(logrus.Fields{
+			"module": "telegram",
+			"func":   "tryForwardMessage",
+			"user":   to.Recipient()}).Errorf("error converting message recipient to int64")
 		return
 	}
 	msg, err = bot.Telegram.Forward(to, what, bot.appendMainMenu(chatId, to, options)...)
 	if err != nil {
-		log.Warnln(err.Error())
+		log.WithObjects(err).WithFields(logrus.Fields{
+			"module": "telegram",
+			"func":   "tryForwardMessage",
+			"user":   to.Recipient()}).Warnln("error forwarding message")
 	}
 	return
 }
@@ -39,13 +47,23 @@ func (bot TipBot) trySendMessage(to tb.Recipient, what interface{}, options ...i
 	// ChatId is used for the keyboard
 	chatId, err := bot.getChatIdFromRecipient(to)
 	if err != nil {
-		log.Errorf("[trySendMessage] error converting message recipient to int64: %v", err)
+		log.WithObjects(err).WithFields(logrus.Fields{
+			"module": "telegram",
+			"func":   "trySendMessage",
+			"user":   to.Recipient()}).Errorf("[trySendMessage] error converting message recipient to int64: %v", err)
 		return
 	}
-	log.Tracef("[trySendMessage] chatId: %d", chatId)
+	logrus.WithFields(logrus.Fields{
+		"module":  "telegram",
+		"func":    "trySendMessage",
+		"chat_id": chatId,
+		"user":    to.Recipient()}).Tracef("trying to send something")
 	msg, err = bot.Telegram.Send(to, what, bot.appendMainMenu(chatId, to, options)...)
 	if err != nil {
-		log.Warnln(err.Error())
+		log.WithObjects(err).WithFields(logrus.Fields{
+			"module": "telegram",
+			"func":   "trySendMessage",
+			"user":   to.Recipient()}).Warnln("error sending message")
 	}
 	return
 }
@@ -54,7 +72,10 @@ func (bot TipBot) trySendMessageEditable(to tb.Recipient, what interface{}, opti
 	rate.CheckLimit(to)
 	msg, err := bot.Telegram.Send(to, what, options...)
 	if err != nil {
-		log.Warnln(err.Error())
+		log.WithObjects(err).WithFields(logrus.Fields{
+			"module": "telegram",
+			"func":   "trySendMessageEditable",
+			"user":   to.Recipient()}).Warnln("error sending editable")
 	}
 	return
 }
@@ -63,7 +84,9 @@ func (bot TipBot) tryReplyMessage(to *tb.Message, what interface{}, options ...i
 	rate.CheckLimit(to)
 	msg, err := bot.Telegram.Reply(to, what, bot.appendMainMenu(to.Chat.ID, to, options)...)
 	if err != nil {
-		log.Warnln(err.Error())
+		log.WithObjects(err, &lnbits.User{Telegram: to.Sender}).WithFields(logrus.Fields{
+			"module": "telegram",
+			"func":   "trySendMessageEditable"}).Warnln("error reply message")
 	}
 	return
 }
@@ -77,10 +100,15 @@ func (bot TipBot) tryEditMessage(to tb.Editable, what interface{}, options ...in
 	rate.CheckLimit(sig)
 
 	_, chatId := to.MessageSig()
-	log.Tracef("[tryEditMessage] sig: %s, chatId: %d", sig, chatId)
+	logrus.WithFields(logrus.Fields{
+		"module":  "telegram",
+		"func":    "tryEditMessage",
+		"chat_id": chatId}).Tracef("trying to send something")
 	msg, err = bot.Telegram.Edit(to, what, options...)
 	if err != nil {
-		log.Warnln(err.Error())
+		log.WithObjects(err).WithFields(logrus.Fields{
+			"module": "telegram",
+			"func":   "tryEditMessage"}).Warnln("error edit message")
 	}
 	return
 }
@@ -92,7 +120,9 @@ func (bot TipBot) tryDeleteMessage(msg tb.Editable) {
 	rate.CheckLimit(msg)
 	err := bot.Telegram.Delete(msg)
 	if err != nil {
-		log.Warnln(err.Error())
+		log.WithObjects(err).WithFields(logrus.Fields{
+			"module": "telegram",
+			"func":   "tryDeleteMessage"}).Warnln("error delete message")
 	}
 	return
 
@@ -114,7 +144,9 @@ func allowedToPerformAction(bot TipBot, editable tb.Editable, action func(member
 			if err != nil {
 				admins, err = bot.Telegram.AdminsOf(message.Chat)
 				if err != nil {
-					log.Warnln(err.Error())
+					log.WithObjects(err).WithFields(logrus.Fields{
+						"module": "telegram",
+						"func":   "allowedToPerformAction"}).Warnln("error fetching admins")
 					return false
 				}
 				bot.Cache.Set(fmt.Sprintf("admins-%d", chat.ID), admins, &store.Options{Expiration: 5 * time.Minute})
@@ -142,7 +174,10 @@ func isAdminAndCanDelete(members []tb.ChatMember, me *tb.User) bool {
 func (bot *TipBot) isOwner(chat *tb.Chat, me *tb.User) bool {
 	members, err := bot.Telegram.AdminsOf(chat)
 	if err != nil {
-		log.Warnln(err.Error())
+		log.WithObjects(err).WithFields(logrus.Fields{
+			"module":  "telegram",
+			"func":    "isOwner",
+			"chat_id": chat.ID}).Warnln("error checking bot admin status")
 		return false
 	}
 	for _, admin := range members {
@@ -157,7 +192,10 @@ func (bot *TipBot) isOwner(chat *tb.Chat, me *tb.User) bool {
 func (bot *TipBot) isAdmin(chat *tb.Chat, me *tb.User) bool {
 	members, err := bot.Telegram.AdminsOf(chat)
 	if err != nil {
-		log.Warnln(err.Error())
+		log.WithObjects(err).WithFields(logrus.Fields{
+			"module":  "telegram",
+			"func":    "isAdmin",
+			"chat_id": chat.ID}).Warnln("error checking bot admin status")
 		return false
 	}
 	for _, admin := range members {
@@ -172,7 +210,10 @@ func (bot *TipBot) isAdmin(chat *tb.Chat, me *tb.User) bool {
 func (bot *TipBot) isAdminAndCanInviteUsers(chat *tb.Chat, me *tb.User) bool {
 	members, err := bot.Telegram.AdminsOf(chat)
 	if err != nil {
-		log.Warnln(err.Error())
+		log.WithObjects(err).WithFields(logrus.Fields{
+			"module":  "telegram",
+			"func":    "isAdminAndCanInviteUsers",
+			"chat_id": chat.ID}).Warnln("error checking bot admin status")
 		return false
 	}
 	for _, admin := range members {

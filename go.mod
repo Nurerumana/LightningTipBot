@@ -60,6 +60,7 @@ require (
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/go-errors/errors v1.0.1 // indirect
 	github.com/go-redis/redis/v8 v8.8.2 // indirect
+	github.com/google/uuid v1.3.0 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.2 // indirect
 	github.com/kkdai/bstream v1.0.0 // indirect

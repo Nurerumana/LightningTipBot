@@ -47,7 +47,7 @@ func (u User) Log() map[string]interface{} {
 	}
 	if u.Telegram != nil {
 		logMap["telegram_id"] = u.Telegram.ID
-		logMap["user"] = u.GetUserStr()
+		logMap["user_name"] = u.GetUserStr()
 	}
 	return logMap
 }

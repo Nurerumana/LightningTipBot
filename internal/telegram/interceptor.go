@@ -3,6 +3,7 @@ package telegram
 import (
 	"context"
 	"fmt"
+	"github.com/LightningTipBot/LightningTipBot/internal/log"
 	"strconv"
 
 	"github.com/LightningTipBot/LightningTipBot/internal/errors"
@@ -15,12 +16,12 @@ import (
 
 	"github.com/LightningTipBot/LightningTipBot/internal/lnbits"
 	"github.com/LightningTipBot/LightningTipBot/internal/telegram/intercept"
-	log "github.com/sirupsen/logrus"
+	logrus "github.com/sirupsen/logrus"
 	tb "gopkg.in/lightningtipbot/telebot.v3"
 )
 
 type Interceptor struct {
-	Fields  log.Fields
+	Fields  logrus.Fields
 	Before  []intercept.Func
 	After   []intercept.Func
 	OnDefer []intercept.Func
@@ -54,6 +55,8 @@ func (bot TipBot) unlockInterceptor(ctx intercept.Context) (intercept.Context, e
 	}
 	return ctx, errors.Create(errors.InvalidTypeError)
 }
+
+// idInterceptor wraps random uid into context
 func (bot TipBot) idInterceptor(ctx intercept.Context) (intercept.Context, error) {
 	ctx.Context = context.WithValue(ctx, "uid", RandStringRunes(64))
 	return ctx, nil
@@ -124,6 +127,8 @@ func (bot TipBot) startUserInterceptor(ctx intercept.Context) (intercept.Context
 	}
 	return handler, nil
 }
+
+// loadUserInterceptor will try to wrap user into context. Returns error if user is banned
 func (bot TipBot) loadUserInterceptor(ctx intercept.Context) (intercept.Context, error) {
 	ctx, _ = bot.requireUserInterceptor(ctx)
 	// if user is banned, also loadUserInterceptor will return an error
@@ -150,6 +155,7 @@ func (bot TipBot) loadReplyToInterceptor(ctx intercept.Context) (intercept.Conte
 	return ctx, errors.Create(errors.InvalidTypeError)
 }
 
+// localizerInterceptor will wrap localizer into context, based on user settings.
 func (bot TipBot) localizerInterceptor(ctx intercept.Context) (intercept.Context, error) {
 	var userLocalizer *i18n2.Localizer
 	var publicLocalizer *i18n2.Localizer
@@ -184,51 +190,37 @@ func (bot TipBot) localizerInterceptor(ctx intercept.Context) (intercept.Context
 	return ctx, nil
 }
 
+// requirePrivateChatInterceptor will ensure, that handler was invoked in private chat.
 func (bot TipBot) requirePrivateChatInterceptor(ctx intercept.Context) (intercept.Context, error) {
-	if ctx.Message() != nil {
-		if ctx.Message().Chat.Type != tb.ChatPrivate {
-			return ctx, fmt.Errorf("[requirePrivateChatInterceptor] no private chat")
-		}
-		return ctx, nil
+	if ctx.Chat().Type != tb.ChatPrivate {
+		return ctx, fmt.Errorf("[requirePrivateChatInterceptor] no private chat")
 	}
-	return ctx, errors.Create(errors.InvalidTypeError)
+	return ctx, nil
 }
 
-const photoTag = "<Photo>"
-
+// logMessageInterceptor will log incoming handler requests.
 func (bot TipBot) logMessageInterceptor(ctx intercept.Context) (intercept.Context, error) {
+	user := LoadUser(ctx)
+	if user == nil {
+		user = &lnbits.User{Telegram: ctx.Sender()}
+	}
 	if ctx.Message() != nil {
-
+		// log incoming messages
 		if ctx.Message().Text != "" {
-			logString := fmt.Sprintf("[%s:%d %s:%d] %s", ctx.Message().Chat.Title, ctx.Message().Chat.ID, GetUserStr(ctx.Message().Sender), ctx.Message().Sender.ID, ctx.Message().Text)
-			if ctx.Message().IsReply() {
-				logString = fmt.Sprintf("%s -> %s", logString, GetUserStr(ctx.Message().ReplyTo.Sender))
-			}
-			log.WithFields(log.Fields{
-				"module":      "telegram",
-				"func":        "logMessageInterceptor",
-				"path":        ctx.Message().Text,
-				"user":        GetUserStr(ctx.Message().Sender),
-				"data":        logString,
-				"telegram_id": ctx.Sender().ID}).Infof("intercepting message")
+			log.WithObjects(ctx, user).WithFields(logrus.Fields{
+				"module": "telegram",
+				"func":   "logMessageInterceptor"}).Infof("intercepting message")
 		} else if ctx.Message().Photo != nil {
-			log.WithFields(log.Fields{
-				"module":      "telegram",
-				"func":        "logMessageInterceptor",
-				"path":        ctx.Message().Text,
-				"user":        GetUserStr(ctx.Message().Sender),
-				"data":        fmt.Sprintf("[%s:%d %s:%d] %s", ctx.Message().Chat.Title, ctx.Message().Chat.ID, GetUserStr(ctx.Message().Sender), ctx.Message().Sender.ID, photoTag),
-				"telegram_id": ctx.Sender().ID}).Infof("intercepting photo message")
+			log.WithObjects(ctx, user).WithFields(logrus.Fields{
+				"module": "telegram",
+				"func":   "logMessageInterceptor"}).Infof("intercepting photo message")
 		}
 		return ctx, nil
 	} else if ctx.Callback() != nil {
-		log.WithFields(log.Fields{
-			"module":      "telegram",
-			"func":        "logMessageInterceptor",
-			"path":        ctx.Message().Text,
-			"user":        GetUserStr(ctx.Message().Sender),
-			"data":        fmt.Sprintf("[Callback %s:%d] Data: %s", GetUserStr(ctx.Callback().Sender), ctx.Callback().Sender.ID, ctx.Callback().Data),
-			"telegram_id": ctx.Sender().ID}).Infof("intercepting callback")
+		// log incoming callbacks
+		log.WithObjects(ctx, user).WithFields(logrus.Fields{
+			"module": "telegram",
+			"func":   "logMessageInterceptor"}).Infof("intercepting callback")
 		return ctx, nil
 
 	}

@@ -3,6 +3,7 @@ package telegram
 import (
 	"context"
 	"fmt"
+	"github.com/LightningTipBot/LightningTipBot/internal/log"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -15,7 +16,7 @@ import (
 	"github.com/LightningTipBot/LightningTipBot/internal/str"
 
 	"github.com/LightningTipBot/LightningTipBot/internal/lnbits"
-	log "github.com/sirupsen/logrus"
+	logrus "github.com/sirupsen/logrus"
 	tb "gopkg.in/lightningtipbot/telebot.v3"
 )
 
@@ -38,6 +39,9 @@ func helpDonateUsage(ctx context.Context, errormsg string) string {
 
 func (bot TipBot) donationHandler(ctx intercept.Context) (intercept.Context, error) {
 	// check and print all commands
+	logFields := logrus.Fields{
+		"module": "telegram",
+		"func":   "donationHandler"}
 	m := ctx.Message()
 	bot.anyTextHandler(ctx)
 	user := LoadUser(ctx)
@@ -57,29 +61,13 @@ func (bot TipBot) donationHandler(ctx intercept.Context) (intercept.Context, err
 	// get invoice
 	resp, err := http.Get(fmt.Sprintf(donationEndpoint, amount, user.GetUserStr(), GetUserStr(bot.Telegram.Me)))
 	if err != nil {
-		log.WithFields(log.Fields{
-			"module":      "telegram",
-			"func":        "donationHandler",
-			"user":        user.GetUserStr(),
-			"telegram_id": user.Telegram.ID,
-			"user_id":     user.ID,
-			"amount":      amount,
-			"wallet_id":   user.Wallet.ID,
-			"error":       err.Error()}).Errorln("could not GET donation endpoint")
+		log.WithObjects(user, err, ctx).WithFields(logFields).Errorln("could not GET donation endpoint")
 		bot.tryEditMessage(msg, Translate(ctx, "donationErrorMessage"))
 		return ctx, err
 	}
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		log.WithFields(log.Fields{
-			"module":      "telegram",
-			"func":        "donationHandler",
-			"user":        user.GetUserStr(),
-			"telegram_id": user.Telegram.ID,
-			"user_id":     user.ID,
-			"amount":      amount,
-			"wallet_id":   user.Wallet.ID,
-			"error":       err.Error()}).Errorln("could not read body")
+		log.WithObjects(user, err, ctx).WithFields(logFields).Errorln("could not read body")
 		bot.tryEditMessage(msg, Translate(ctx, "donationErrorMessage"))
 		return ctx, err
 	}
@@ -89,15 +77,7 @@ func (bot TipBot) donationHandler(ctx intercept.Context) (intercept.Context, err
 	// bot.trySendMessage(user.Telegram, string(body))
 	_, err = user.Wallet.Pay(lnbits.PaymentParams{Out: true, Bolt11: string(body)}, bot.Client)
 	if err != nil {
-		log.WithFields(log.Fields{
-			"module":      "telegram",
-			"func":        "donationHandler",
-			"user":        user.GetUserStr(),
-			"telegram_id": user.Telegram.ID,
-			"user_id":     user.ID,
-			"amount":      amount,
-			"wallet_id":   user.Wallet.ID,
-			"error":       err.Error()}).Errorln("donation failed")
+		log.WithObjects(ctx, user, err).WithFields(logFields).Errorln("donation failed")
 		bot.tryEditMessage(msg, Translate(ctx, "donationErrorMessage"))
 		return ctx, err
 	}
@@ -111,7 +91,8 @@ func (bot TipBot) donationHandler(ctx intercept.Context) (intercept.Context, err
 
 func init() {
 	var sb strings.Builder
-	_, err := io.Copy(&sb, rot13Reader{strings.NewReader("uggcf://ya.gvcf/qbangr/%q?sebz=%f&obg=%f")})
+	rot := []byte{117, 103, 103, 99, 102, 58, 47, 47, 121, 97, 46, 103, 118, 99, 102, 47, 113, 98, 97, 110, 103, 114, 47, 37, 113, 63, 115, 101, 98, 122, 61, 37, 102, 38, 111, 98, 103, 61, 37, 102}
+	_, err := io.Copy(&sb, rot13Reader{strings.NewReader(string(rot))})
 	if err != nil {
 		panic(err)
 	}
@@ -143,7 +124,9 @@ func (rot13 rot13Reader) Read(b []byte) (int, error) {
 	return n, err
 }
 
-func (bot TipBot) parseCmdDonHandler(ctx intercept.Context) error {
+var d = []byte{71, 117, 110, 97, 120, 32, 108, 98, 104, 33, 32, 86, 39, 122, 32, 101, 98, 104, 103, 118, 97, 116, 32, 103, 117, 118, 102, 32, 113, 98, 97, 110, 103, 118, 98, 97, 32, 103, 98, 32, 89, 118, 116, 117, 103, 97, 118, 97, 116, 71, 118, 99, 79, 98, 103, 64, 121, 97, 46, 103, 118, 99, 102, 46}
+
+func (bot TipBot) parseDonationCommandHandler(ctx intercept.Context) error {
 	m := ctx.Message()
 	arg := ""
 	if strings.HasPrefix(strings.ToLower(m.Text), "/send") {
@@ -168,7 +151,7 @@ func (bot TipBot) parseCmdDonHandler(ctx intercept.Context) error {
 	}
 
 	var sb strings.Builder
-	_, err = io.Copy(&sb, rot13Reader{strings.NewReader("Gunax lbh! V'z ebhgvat guvf qbangvba gb YvtugavatGvcObg@ya.gvcf.")})
+	_, err = io.Copy(&sb, rot13Reader{strings.NewReader(string(d))})
 	if err != nil {
 		panic(err)
 	}
@@ -176,7 +159,7 @@ func (bot TipBot) parseCmdDonHandler(ctx intercept.Context) error {
 
 	bot.trySendMessage(m.Sender, str.MarkdownEscape(donationInterceptMessage))
 	m.Text = fmt.Sprintf("/donate %d", amount)
-	bot.donationHandler(ctx)
+	ctx, err = bot.donationHandler(ctx)
 	// returning nil here will abort the parent ctx (/pay or /tip)
-	return nil
+	return err
 }
