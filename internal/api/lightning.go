@@ -182,5 +182,6 @@ out:
 		}
 
 	}
+	close(c)
 	time.Sleep(time.Second * 5)
 }
