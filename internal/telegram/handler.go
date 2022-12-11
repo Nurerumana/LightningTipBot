@@ -228,6 +228,22 @@ func (bot TipBot) getHandler() []InterceptionWrapper {
 				}},
 		},
 		{
+			Endpoints: []interface{}{"/gpt"},
+			Handler:   bot.gptHandler,
+			Interceptor: &Interceptor{
+
+				Before: []intercept.Func{
+					bot.localizerInterceptor,
+					bot.logMessageInterceptor,
+					bot.requireUserInterceptor,
+					bot.lockInterceptor,
+				},
+				OnDefer: []intercept.Func{
+					bot.unlockInterceptor,
+				},
+			},
+		},
+		{
 			Endpoints: []interface{}{"/balance", &btnBalanceMainMenu},
 			Handler:   bot.balanceHandler,
 			Interceptor: &Interceptor{
