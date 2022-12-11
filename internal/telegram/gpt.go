@@ -39,9 +39,18 @@ func (bot *TipBot) gptHandler(ctx intercept.Context) (intercept.Context, error) 
 	var msg *telebot.Message
 	completion, err := gpt.GetRawCompletion(ctx, req, func(s string) {
 		cbc++
-		if cbc == 1 {
-			msg = bot.tryReplyMessage(ctx.Message(), s)
-		} else if cbc%20 == 0 {
+		if ctx.Chat().Type == telebot.ChatPrivate {
+			if cbc == 20 {
+				msg = bot.trySendMessageEditable(ctx.Sender(), s)
+				return
+			}
+		} else {
+			if cbc == 20 {
+				msg = bot.tryReplyMessage(ctx.Message(), s)
+				return
+			}
+		}
+		if cbc%20 == 0 {
 			bot.tryEditMessage(msg, s)
 		}
 	})
