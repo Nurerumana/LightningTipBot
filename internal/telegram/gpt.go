@@ -58,7 +58,8 @@ func (bot *TipBot) gptHandler(ctx intercept.Context) (intercept.Context, error) 
 		bot.tryEditMessage(ctx.Message(), fmt.Sprintf(Translate(ctx, "errorReasonMessage"), "Could not create completion."))
 		return ctx, err
 	}
-	bot.tryEditMessage(msg, completion.Message.Content.Parts[len(completion.Message.Content.Parts)-1])
+	answer := completion.Message.Content.Parts[len(completion.Message.Content.Parts)-1]
+	bot.tryEditMessage(msg, answer)
 	err = bot.Cache.Set(conversationIdCacheKey, completion.ConversationID, nil)
 	if err != nil {
 		log.Errorf("[/gpt] error setting conversation id %s: %v", conversationIdCacheKey, err)
@@ -67,5 +68,6 @@ func (bot *TipBot) gptHandler(ctx intercept.Context) (intercept.Context, error) 
 	if err != nil {
 		log.Errorf("[/gpt] error setting parent message id %s: %v", parentIdCacheKey, err)
 	}
+	log.Infof("[/gpt] \"%s\" => \"%s\"", question, answer)
 	return ctx, nil
 }
