@@ -3,16 +3,12 @@ package gpt
 import (
 	"bufio"
 	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/LightningTipBot/LightningTipBot/internal"
 	"github.com/LightningTipBot/LightningTipBot/internal/telegram/intercept"
-	"github.com/PullRequestInc/go-gpt3"
 	"net/http"
 )
-
-var client gpt3.Client
 
 type Response struct {
 	Message struct {
@@ -49,10 +45,6 @@ type Messages struct {
 	ID      string  `json:"id"`
 	Role    string  `json:"role"`
 	Content Content `json:"content"`
-}
-
-func init() {
-	client = gpt3.NewClient(internal.Configuration.Generate.OpenAiBearerToken)
 }
 
 var dataPrefix = []byte("data: ")
@@ -107,18 +99,4 @@ func GetRawCompletion(ctx intercept.Context, rr Request, cb func(s string)) (*Re
 		}
 	}
 	return output, nil
-}
-func GetCompletion(ctx context.Context, question string) (string, error) {
-	var choice string
-	err := client.CompletionStreamWithEngine(ctx, gpt3.TextDavinci003Engine, gpt3.CompletionRequest{
-		Prompt: []string{
-			question,
-		},
-		MaxTokens:   gpt3.IntPtr(300),
-		Temperature: gpt3.Float32Ptr(0.9),
-	}, func(resp *gpt3.CompletionResponse) {
-		fmt.Print(resp.Choices[0].Text)
-		choice = resp.Choices[0].Text
-	})
-	return choice, err
 }
