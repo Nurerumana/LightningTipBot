@@ -228,7 +228,7 @@ func (bot TipBot) getHandler() []InterceptionWrapper {
 				}},
 		},
 		{
-			Endpoints: []interface{}{"/gpt","/chat"},
+			Endpoints: []interface{}{"/gpt", "/chat"},
 			Handler:   bot.gptHandler,
 			Interceptor: &Interceptor{
 

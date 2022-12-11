@@ -7,11 +7,10 @@ import (
 	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
 	"gopkg.in/lightningtipbot/telebot.v3"
-	"strings"
 )
 
 func (bot *TipBot) gptHandler(ctx intercept.Context) (intercept.Context, error) {
-	question := strings.Replace(ctx.Message().Text, "/gpt ", "", 1)
+	question := GetMemoFromCommand(ctx.Text(), 1)
 	req := gpt.Request{
 		Action: "next",
 		Model:  "text-davinci-002-render",
