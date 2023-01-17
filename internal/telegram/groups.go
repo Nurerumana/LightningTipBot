@@ -31,13 +31,22 @@ type Ticket struct {
 	CutCheap     int64        `json:"cut_cheap"` // Percent to cut from ticket price
 	BaseFeeCheap int64        `json:"base_fee_cheap"`
 }
+
+type GroupFeatures struct {
+	Silent    bool `json:"silent"`    // do not respond with feedback to commands
+	DeleteTip bool `json:"deletetip"` // delete /tip messages after a time
+	Ticket    bool `json:"ticket"`    // enable group tickets
+	Tipjar    bool `json:"tipjar"`    // enable tipjars to be created
+	Faucet    bool `json:"faucet"`    // enable faucets to be create
+}
 type Group struct {
 	Name  string   `json:"name"`
 	Title string   `json:"title"`
 	ID    int64    `json:"id" gorm:"primaryKey"`
 	Owner *tb.User `gorm:"embedded;embeddedPrefix:owner_"`
 	// Chat   *tb.Chat `gorm:"embedded;embeddedPrefix:chat_"`
-	Ticket *Ticket `gorm:"embedded;embeddedPrefix:ticket_"`
+	Ticket   *Ticket        `gorm:"embedded;embeddedPrefix:ticket_"`
+	Features *GroupFeatures `gorm:"embedded;embeddedPrefix:features_"`
 }
 type CreateChatInviteLink struct {
 	ChatID             int64  `json:"chat_id"`
@@ -106,14 +115,42 @@ func (bot TipBot) groupHandler(ctx intercept.Context) (intercept.Context, error)
 		if splits[1] == "join" {
 			return bot.groupRequestJoinHandler(ctx)
 		}
-		if splits[1] == "add" {
+		if splits[1] == "add" || splits[1] == "ticket" {
+			// create ticket for this group
+			// we check inside addGroupHandler whether the user is the owner of the group
 			return bot.addGroupHandler(ctx)
 		}
 		if splits[1] == "remove" {
 			// todo -- implement this
 			// return bot.addGroupHandler(ctx, m)
 		}
+		if splits[1] == "enable" {
+			// enable features for this group
+			if !bot.isAdmin(ctx.Message().Chat, user.Telegram) {
+				bot.trySendMessage(ctx.Message().Chat, Translate(ctx, "groupBotIsNotAdminMessage"))
+				return ctx, fmt.Errorf("user is not admin")
+			}
+			return bot.groupEnableFeature(ctx, splits[2])
+		}
+		if splits[1] == "disable" {
+			// disable features for this group
+			if !bot.isAdmin(ctx.Message().Chat, user.Telegram) {
+				bot.trySendMessage(ctx.Message().Chat, Translate(ctx, "groupBotIsNotAdminMessage"))
+				return ctx, fmt.Errorf("user is not admin")
+			}
+			return bot.groupDisableFeature(ctx, splits[2])
+		}
 	}
+	return ctx, nil
+}
+
+// groupEnableFeature enables a feature for a group
+func (bot TipBot) groupEnableFeature(ctx intercept.Context, feature string) (intercept.Context, error) {
+	return ctx, nil
+}
+
+// groupDisableFeature disables a feature for a group
+func (bot TipBot) groupDisableFeature(ctx intercept.Context, feature string) (intercept.Context, error) {
 	return ctx, nil
 }
 
